@@ -2,7 +2,7 @@ ARG DEBIAN_RELEASE=bookworm
 ARG LONG_VERSION
 ARG TARGETARCH
 
-FROM nerfdog/rspamd:pkg-${TARGETARCH}-${LONG_VERSION} AS pkg
+FROM rspamd/rspamd:pkg-${TARGETARCH}-${LONG_VERSION} AS pkg
 FROM --platform=linux/${TARGETARCH} debian:${DEBIAN_RELEASE} AS install
 
 ARG ASAN_TAG
