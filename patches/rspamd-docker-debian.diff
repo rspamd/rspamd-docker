@@ -1,0 +1,40 @@
+diff --git a/debian/postinst b/debian/postinst
+index 3d4322117..2a69f77ab 100644
+--- a/debian/postinst
++++ b/debian/postinst
+@@ -7,14 +7,20 @@ case "$1" in
+        SERVER_LOG=/var/log/rspamd
+        SERVER_USER=_rspamd
+ 
++       addgroup --system \
++               --force-badname \
++               --gid 11333 \
++               $SERVER_USER
++
+        adduser --quiet \
+                --system \
+-               --group \
++               --ingroup $SERVER_USER \
+                --home $SERVER_HOME \
+                --no-create-home \
+                --disabled-login \
+                --gecos "rspamd spam filtering system" \
+                --force-badname \
++               --uid 11333 \
+                $SERVER_USER
+        mkdir -p $SERVER_HOME $SERVER_LOG || true
+        chown $SERVER_USER: $SERVER_HOME $SERVER_LOG
+diff --git a/debian/rules b/debian/rules
+index 74771ede3..6a3153b5f 100755
+--- a/debian/rules
++++ b/debian/rules
+@@ -28,7 +28,8 @@ endif
+ override_dh_auto_configure: $(patsubst %,configure_%,$(FLAVORS))
+ configure_%:
+ 	mkdir -p $(builddir)$*
+-	cd $(builddir)$* && cmake ../../../  -DCONFDIR=/etc/rspamd \
++	cd $(builddir)$* && cmake ../../../  -DCONFDIR=/usr/share/rspamd/config \
++		-DENABLE_FASTTEXT=ON \
+ 		-DMANDIR=/usr/share/man \
+ 		-DRUNDIR=/run/rspamd \
+ 		-DDBDIR=/var/lib/rspamd \

@@ -1,0 +1,59 @@
+diff --git a/conf/lang_detection.inc b/conf/lang_detection.inc
+index 50c62ad19..dc4fa7230 100644
+--- a/conf/lang_detection.inc
++++ b/conf/lang_detection.inc
+@@ -21,7 +21,7 @@
+ # languages_disable = ["fr", "es"]
+ 
+ # Use the following fasttext model for language detection (if Fasttext support is compiled in)
+-# fasttext_model = "${RSPAMD_SHAREDIR}/languages/fasttext_model.ftz"
++fasttext_model = "${RSPAMD_SHAREDIR}/languages/fasttext_model.ftz"
+ 
+ # Prefer fasttext over all other methods
+ # prefer_fasttext = true;
+diff --git a/conf/rspamd.conf b/conf/rspamd.conf
+index 8ce93441c..eeaee8b08 100644
+--- a/conf/rspamd.conf
++++ b/conf/rspamd.conf
+@@ -18,7 +18,6 @@
+ .include "$CONFDIR/common.conf"
+ 
+ options {
+-    pidfile = "$RUNDIR/rspamd.pid";
+     .include "$CONFDIR/options.inc"
+     .include(try=true; priority=1,duplicate=merge) "$LOCAL_CONFDIR/local.d/options.inc"
+     .include(try=true; priority=10) "$LOCAL_CONFDIR/override.d/options.inc"
+@@ -34,7 +33,7 @@ lang_detection {
+ .include(try=true; priority=1,duplicate=merge) "$LOCAL_CONFDIR/local.d/cgp.inc"
+ 
+ logging {
+-    type = "file";
++    type = "console";
+     filename = "$LOGDIR/rspamd.log";
+     .include "$CONFDIR/logging.inc"
+     .include(try=true; priority=1,duplicate=merge) "$LOCAL_CONFDIR/local.d/logging.inc"
+@@ -42,21 +41,21 @@ logging {
+ }
+ 
+ worker "normal" {
+-    bind_socket = "localhost:11333";
++    bind_socket = "*:11333";
+     .include "$CONFDIR/worker-normal.inc"
+     .include(try=true; priority=1,duplicate=merge) "$LOCAL_CONFDIR/local.d/worker-normal.inc"
+     .include(try=true; priority=10) "$LOCAL_CONFDIR/override.d/worker-normal.inc"
+ }
+ 
+ worker "controller" {
+-    bind_socket = "localhost:11334";
++    bind_socket = "*:11334";
+     .include "$CONFDIR/worker-controller.inc"
+     .include(try=true; priority=1,duplicate=merge) "$LOCAL_CONFDIR/local.d/worker-controller.inc"
+     .include(try=true; priority=10) "$LOCAL_CONFDIR/override.d/worker-controller.inc"
+ }
+ 
+ worker "rspamd_proxy" {
+-    bind_socket = "localhost:11332";
++    bind_socket = "*:11332";
+     .include "$CONFDIR/worker-proxy.inc"
+     .include(try=true; priority=1,duplicate=merge) "$LOCAL_CONFDIR/local.d/worker-proxy.inc"
+     .include(try=true; priority=10) "$LOCAL_CONFDIR/override.d/worker-proxy.inc"
