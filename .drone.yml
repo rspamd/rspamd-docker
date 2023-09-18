@@ -81,6 +81,7 @@ steps:
     image: plugins/docker
     settings:
       <<: *default_settings
+      debug: true
       dockerfile: Dockerfile.pkg
       build_args:
         - RSPAMD_VERSION=${DRONE_SEMVER_MAJOR}.${DRONE_SEMVER_MINOR}
