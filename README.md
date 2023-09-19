@@ -4,8 +4,8 @@
 
 ~~~
 mkdir dbdir
-chown 11333:11333 dbdir
-docker run -v ./dbdir:/var/lib/rspamd -ti rspamd/rspamd
+sudo chown 11333:11333 dbdir
+docker run -v `pwd`/dbdir:/var/lib/rspamd -ti rspamd/rspamd
 ~~~
 
 ## Acknowledgements
