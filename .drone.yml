@@ -1,217 +1,325 @@
-kind: pipeline
-type: docker
-name: rspamd_amd64
-
-platform:
-  os: linux
-  arch: amd64
-
-x-default-settings: &default_settings
-  username: { from_secret: docker_username }
-  password: { from_secret: docker_password }
-
-steps:
-  - name: pkg_amd64
-    image: plugins/docker
-    settings:
-      <<: *default_settings
-      dockerfile: Dockerfile.pkg
-      build_args:
-        - RSPAMD_VERSION=${DRONE_SEMVER_MAJOR}.${DRONE_SEMVER_MINOR}
-        - TARGETARCH=amd64
-      platform: linux/amd64
-      repo: rspamd/rspamd
-      tags:
-        - pkg-amd64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}
-      target: pkg
-
-  - name: install_amd64
-    depends_on: [ pkg_amd64 ]
-    image: plugins/docker
-    settings:
-      <<: *default_settings
-      dockerfile: Dockerfile
-      build_args:
-        - LONG_VERSION=${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}
-        - TARGETARCH=amd64
-      platform: linux/amd64
-      repo: rspamd/rspamd
-      squash: true
-      tags:
-        - image-amd64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}
-      target: install
-
-  - name: install_asan_amd64
-    depends_on: [ pkg_amd64 ]
-    image: plugins/docker
-    settings:
-      <<: *default_settings
-      dockerfile: Dockerfile
-      build_args:
-        - ASAN_TAG=-asan
-        - LONG_VERSION=${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}
-        - TARGETARCH=amd64
-      platform: linux/amd64
-      repo: rspamd/rspamd
-      squash: true
-      tags:
-        - image-asan-amd64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}
-      target: install
-
-trigger:
-  event:
-    include:
-    - tag
-
 ---
-kind: pipeline
-type: docker
-name: rspamd_arm64
-
-platform:
-  os: linux
-  arch: arm64
-
-x-default-settings: &default_settings
-  username: { from_secret: docker_username }
-  password: { from_secret: docker_password }
-
-steps:
-  - name: pkg_arm64
-    image: plugins/docker
-    settings:
-      <<: *default_settings
-      dockerfile: Dockerfile.pkg
-      build_args:
-        - RSPAMD_VERSION=${DRONE_SEMVER_MAJOR}.${DRONE_SEMVER_MINOR}
-        - TARGETARCH=arm64
-      platform: linux/arm64
-      repo: rspamd/rspamd
-      tags:
-        - pkg-arm64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}
-      target: pkg
-
-  - name: install_arm64
-    depends_on: [ pkg_arm64 ]
-    image: plugins/docker
-    settings:
-      <<: *default_settings
-      dockerfile: Dockerfile
-      build_args:
-        - LONG_VERSION=${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}
-        - TARGETARCH=arm64
-      platform: linux/arm64
-      repo: rspamd/rspamd
-      squash: true
-      tags:
-        - image-arm64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}
-      target: install
-
-  - name: install_asan_arm64
-    depends_on: [ pkg_arm64 ]
-    image: plugins/docker
-    settings:
-      <<: *default_settings
-      dockerfile: Dockerfile
-      build_args:
-        - ASAN_TAG=-asan
-        - LONG_VERSION=${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}
-        - TARGETARCH=arm64
-      platform: linux/arm64
-      repo: rspamd/rspamd
-      squash: true
-      tags:
-        - image-asan-arm64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}
-      target: install
-
-trigger:
-  event:
-    include:
-    - tag
-
+{
+   "kind": "pipeline",
+   "name": "rspamd_amd64",
+   "platform": {
+      "arch": "amd64",
+      "os": "linux"
+   },
+   "steps": [
+      {
+         "image": "plugins/docker",
+         "name": "pkg_amd64",
+         "settings": {
+            "build_args": [
+               "RSPAMD_VERSION=${DRONE_SEMVER_MAJOR}.${DRONE_SEMVER_MINOR}",
+               "TARGETARCH=amd64"
+            ],
+            "dockerfile": "Dockerfile.pkg",
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platform": "linux/amd64",
+            "repo": "rspamd/rspamd",
+            "tags": [
+               "pkg-amd64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}"
+            ],
+            "target": "pkg",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      },
+      {
+         "depends_on": [
+            "pkg_amd64"
+         ],
+         "image": "plugins/docker",
+         "name": "install_amd64",
+         "settings": {
+            "build_args": [
+               "LONG_VERSION=${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
+               "TARGETARCH=amd64"
+            ],
+            "dockerfile": "Dockerfile",
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platform": "linux/amd64",
+            "repo": "rspamd/rspamd",
+            "squash": true,
+            "tags": [
+               "image-amd64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}"
+            ],
+            "target": "install",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      },
+      {
+         "depends_on": [
+            "pkg_amd64"
+         ],
+         "image": "plugins/docker",
+         "name": "install_asan_amd64",
+         "settings": {
+            "build_args": [
+               "LONG_VERSION=${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
+               "TARGETARCH=amd64",
+               "ASAN_TAG=-asan"
+            ],
+            "dockerfile": "Dockerfile",
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platform": "linux/amd64",
+            "repo": "rspamd/rspamd",
+            "squash": true,
+            "tags": [
+               "image-asan-amd64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}"
+            ],
+            "target": "install",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      }
+   ],
+   "trigger": {
+      "event": {
+         "include": [
+            "tag"
+         ]
+      }
+   },
+   "type": "docker"
+}
 ---
-kind: pipeline
-type: docker
-name: rspamd_multiarch
-depends_on: [ rspamd_amd64, rspamd_arm64 ]
-
-platform:
-  os: linux
-  arch: amd64
-
-x-default-settings: &default_settings
-  username: { from_secret: docker_username }
-  password: { from_secret: docker_password }
-
-steps:
-  - name: multiarch_image
-    image: plugins/manifest
-    settings:
-      <<: *default_settings
-      target: rspamd/rspamd:image-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}
-      template: rspamd/rspamd:image-ARCH-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}
-      platforms:
-        - linux/amd64
-        - linux/arm64
-
-  - name: multiarch_asan_image
-    image: plugins/manifest
-    settings:
-      <<: *default_settings
-      target: rspamd/rspamd:image-asan-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}
-      template: rspamd/rspamd:image-asan-ARCH-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}
-      platforms:
-        - linux/amd64
-        - linux/arm64
-
-trigger:
-  event:
-    include:
-    - tag
-
+{
+   "kind": "pipeline",
+   "name": "rspamd_arm64",
+   "platform": {
+      "arch": "arm64",
+      "os": "linux"
+   },
+   "steps": [
+      {
+         "image": "plugins/docker",
+         "name": "pkg_arm64",
+         "settings": {
+            "build_args": [
+               "RSPAMD_VERSION=${DRONE_SEMVER_MAJOR}.${DRONE_SEMVER_MINOR}",
+               "TARGETARCH=arm64"
+            ],
+            "dockerfile": "Dockerfile.pkg",
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platform": "linux/arm64",
+            "repo": "rspamd/rspamd",
+            "tags": [
+               "pkg-arm64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}"
+            ],
+            "target": "pkg",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      },
+      {
+         "depends_on": [
+            "pkg_arm64"
+         ],
+         "image": "plugins/docker",
+         "name": "install_arm64",
+         "settings": {
+            "build_args": [
+               "LONG_VERSION=${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
+               "TARGETARCH=arm64"
+            ],
+            "dockerfile": "Dockerfile",
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platform": "linux/arm64",
+            "repo": "rspamd/rspamd",
+            "squash": true,
+            "tags": [
+               "image-arm64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}"
+            ],
+            "target": "install",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      },
+      {
+         "depends_on": [
+            "pkg_arm64"
+         ],
+         "image": "plugins/docker",
+         "name": "install_asan_arm64",
+         "settings": {
+            "build_args": [
+               "LONG_VERSION=${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
+               "TARGETARCH=arm64",
+               "ASAN_TAG=-asan"
+            ],
+            "dockerfile": "Dockerfile",
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platform": "linux/arm64",
+            "repo": "rspamd/rspamd",
+            "squash": true,
+            "tags": [
+               "image-asan-arm64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}"
+            ],
+            "target": "install",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      }
+   ],
+   "trigger": {
+      "event": {
+         "include": [
+            "tag"
+         ]
+      }
+   },
+   "type": "docker"
+}
 ---
-kind: pipeline
-type: docker
-name: promotion_multiarch
-
-steps:
-  - name: promote_multiarch
-    image: plugins/manifest
-    settings:
-      username: { from_secret: docker_username }
-      password: { from_secret: docker_password }
-      target: rspamd/rspamd:${DRONE_SEMVER_SHORT}
-      template: rspamd/rspamd:image-ARCH-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}
-      platforms:
-        - linux/amd64
-        - linux/arm64
-      tags:
-        - latest
-        - ${DRONE_SEMVER_MAJOR}.${DRONE_SEMVER_MINOR}
-
-trigger:
-  event:
-  - promote
+{
+   "depends_on": [
+      "rspamd_amd64",
+      "rspamd_arm64"
+   ],
+   "kind": "pipeline",
+   "name": "rspamd_multiarch",
+   "steps": [
+      {
+         "image": "plugins/manifest",
+         "name": "multiarch_image",
+         "settings": {
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platforms": [
+               "linux/amd64",
+               "linux/arm64"
+            ],
+            "target": "rspamd/rspamd:image-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
+            "template": "rspamd/rspamd:image-ARCH-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      },
+      {
+         "image": "plugins/manifest",
+         "name": "multiarch_asan_image",
+         "settings": {
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platforms": [
+               "linux/amd64",
+               "linux/arm64"
+            ],
+            "target": "rspamd/rspamd:image-asan-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
+            "template": "rspamd/rspamd:image-asan-ARCH-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      }
+   ],
+   "trigger": {
+      "event": {
+         "include": [
+            "tag"
+         ]
+      }
+   },
+   "type": "docker"
+}
 ---
-kind: pipeline
-type: docker
-name: promotion_multiarch_asan
-
-steps:
-  - name: promote_multiarch_asan
-    image: plugins/manifest
-    settings:
-      username: { from_secret: docker_username }
-      password: { from_secret: docker_password }
-      target: rspamd/rspamd:asan-${DRONE_SEMVER_SHORT}
-      template: rspamd/rspamd:image-asan-ARCH-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}
-      platforms:
-        - linux/amd64
-        - linux/arm64
-      tags:
-        - asan-latest
-        - asan-${DRONE_SEMVER_MAJOR}.${DRONE_SEMVER_MINOR}
-
-trigger:
-  event:
-  - promote
+{
+   "kind": "pipeline",
+   "name": "promotion_multiarch",
+   "steps": [
+      {
+         "image": "plugins/manifest",
+         "name": "promote_multiarch",
+         "settings": {
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platforms": [
+               "linux/amd64",
+               "linux/arm64"
+            ],
+            "tags": [
+               "latest",
+               "${DRONE_SEMVER_MAJOR}.${DRONE_SEMVER_MINOR}"
+            ],
+            "target": "rspamd/rspamd:${DRONE_SEMVER_SHORT}",
+            "template": "rspamd/rspamd:image-ARCH-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      }
+   ],
+   "trigger": {
+      "event": [
+         "promote"
+      ]
+   },
+   "type": "docker"
+}
+---
+{
+   "kind": "pipeline",
+   "name": "promotion_multiarch_asan",
+   "steps": [
+      {
+         "image": "plugins/manifest",
+         "name": "promote_multiarch_asan",
+         "settings": {
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platforms": [
+               "linux/amd64",
+               "linux/arm64"
+            ],
+            "tags": [
+               "asan-latest",
+               "asan-${DRONE_SEMVER_MAJOR}.${DRONE_SEMVER_MINOR}"
+            ],
+            "target": "rspamd/rspamd:asan-${DRONE_SEMVER_SHORT}",
+            "template": "rspamd/rspamd:image-asan-ARCH-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      }
+   ],
+   "trigger": {
+      "event": [
+         "promote"
+      ]
+   },
+   "type": "docker"
+}
+---
+{
+   "hmac": "0000000000000000000000000000000000000000000000000000000000000000",
+   "kind": "signature"
+}
+...
