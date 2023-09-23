@@ -25,15 +25,16 @@ index 3d4322117..2a69f77ab 100644
         mkdir -p $SERVER_HOME $SERVER_LOG || true
         chown $SERVER_USER: $SERVER_HOME $SERVER_LOG
 diff --git a/debian/rules b/debian/rules
-index 74771ede3..6a3153b5f 100755
+index 74771ede3..3c71812d6 100755
 --- a/debian/rules
 +++ b/debian/rules
-@@ -28,7 +28,8 @@ endif
+@@ -28,7 +28,9 @@ endif
  override_dh_auto_configure: $(patsubst %,configure_%,$(FLAVORS))
  configure_%:
  	mkdir -p $(builddir)$*
 -	cd $(builddir)$* && cmake ../../../  -DCONFDIR=/etc/rspamd \
 +	cd $(builddir)$* && cmake ../../../  -DCONFDIR=/usr/share/rspamd/config \
++		-DLOCAL_CONFDIR=/etc/rspamd \
 +		-DENABLE_FASTTEXT=ON \
  		-DMANDIR=/usr/share/man \
  		-DRUNDIR=/run/rspamd \
