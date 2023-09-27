@@ -3,11 +3,7 @@ ARG DEBIAN_RELEASE=bookworm
 ARG RSPAMD_VERSION=3.6
 ARG TARGETARCH
 
-FROM rspamd/pkg:debian-${DEBIAN_RELEASE} AS build-amd64
-
-FROM rspamd/pkg:debian-${DEBIAN_RELEASE}-aarch64 AS build-arm64
-
-FROM build-$TARGETARCH AS build
+FROM rspamd/pkg:debian-${DEBIAN_RELEASE} AS build
 
 RUN mkdir /build /deb && chown nobody:nogroup /build /deb \
 	&& apt-get update \
