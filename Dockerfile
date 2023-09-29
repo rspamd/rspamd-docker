@@ -3,7 +3,7 @@ ARG LONG_VERSION
 ARG TARGETARCH
 
 FROM rspamd/rspamd:pkg-${TARGETARCH}-${LONG_VERSION} AS pkg
-FROM --platform=linux/${TARGETARCH} debian:${DEBIAN_RELEASE} AS install
+FROM --platform=linux/${TARGETARCH} debian:${DEBIAN_RELEASE} AS preinstall
 
 ARG ASAN_TAG
 ARG TARGETARCH
@@ -21,6 +21,9 @@ RUN	apt-get update \
 	&& rm -rf /var/cache/debconf /var/lib/apt/lists \
 	&& rm -rf /deb
 COPY	lid.176.ftz /usr/share/rspamd/languages/fasttext_model.ftz
+
+FROM scratch AS install
+COPY --from=preinstall / /
 
 USER	11333:11333
 
