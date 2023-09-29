@@ -3,7 +3,7 @@ ARG LONG_VERSION
 ARG TARGETARCH
 
 FROM rspamd/rspamd:pkg-${TARGETARCH}-${LONG_VERSION} AS pkg
-FROM --platform=linux/${TARGETARCH} debian:${DEBIAN_RELEASE} AS preinstall
+FROM --platform=linux/${TARGETARCH} debian:${DEBIAN_RELEASE}-slim AS preinstall
 
 ARG ASAN_TAG
 ARG TARGETARCH
