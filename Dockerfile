@@ -30,4 +30,6 @@ VOLUME  [ "/var/lib/rspamd" ]
 
 CMD     [ "/usr/bin/rspamd", "-f" ]
 
+# https://www.rspamd.com/doc/workers
+# 11332 proxy ; 11333 normal ; 11334 controller
 EXPOSE  11332 11333 11334
