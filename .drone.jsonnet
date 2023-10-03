@@ -69,7 +69,7 @@ local architecture_specific_pipeline(arch) = {
       settings: {
         dockerfile: 'Dockerfile.pkg',
         build_args: [
-          'RSPAMD_VERSION=${DRONE_SEMVER_MAJOR}.${DRONE_SEMVER_MINOR}',
+          'RSPAMD_VERSION=${DRONE_SEMVER_SHORT}',
           'TARGETARCH=' + arch,
         ],
         tags: [

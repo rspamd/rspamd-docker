@@ -12,7 +12,7 @@
          "name": "pkg_amd64",
          "settings": {
             "build_args": [
-               "RSPAMD_VERSION=${DRONE_SEMVER_MAJOR}.${DRONE_SEMVER_MINOR}",
+               "RSPAMD_VERSION=${DRONE_SEMVER_SHORT}",
                "TARGETARCH=amd64"
             ],
             "dockerfile": "Dockerfile.pkg",
@@ -109,7 +109,7 @@
          "name": "pkg_arm64",
          "settings": {
             "build_args": [
-               "RSPAMD_VERSION=${DRONE_SEMVER_MAJOR}.${DRONE_SEMVER_MINOR}",
+               "RSPAMD_VERSION=${DRONE_SEMVER_SHORT}",
                "TARGETARCH=arm64"
             ],
             "dockerfile": "Dockerfile.pkg",
