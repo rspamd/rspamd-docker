@@ -1,0 +1,6 @@
+ARG RSPAMD_VERSION=latest
+
+FROM rspamd/rspamd:${RSPAMD_VERSION}
+COPY rspamd-config /etc/rspamd
+
+EXPOSE 11332 11333 11334
