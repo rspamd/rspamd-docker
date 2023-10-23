@@ -5,7 +5,7 @@ services:
       dockerfile: "Dockerfile.rspamd"
     container_name: rspamd-compose-rspamd
     depends_on:
-      - knot
+      - unbound
       - redis
     environment:
       - RSPAMD_DNS_SERVERS=round-robin:192.0.2.254:53
@@ -33,18 +33,15 @@ services:
     volumes:
       - rspamd-compose-redis-data:/data
 
-  knot:
+  unbound:
     build:
       context: "."
-      dockerfile: "Dockerfile.knot"
-    container_name: rspamd-compose-knot
-    command: "-n -c /etc/knot-resolver/kresd.conf"
+      dockerfile: "Dockerfile.unbound"
+    container_name: rspamd-compose-unbound
     networks:
       rspamd:
         ipv4_address: 192.0.2.254
     pull_policy: build
-    volumes:
-      - rspamd-compose-knot-data:/data
 
 
 networks:
@@ -55,6 +52,5 @@ networks:
 
 
 volumes:
-  rspamd-compose-knot-data:
   rspamd-compose-redis-data:
   rspamd-compose-rspamd-dbdir:

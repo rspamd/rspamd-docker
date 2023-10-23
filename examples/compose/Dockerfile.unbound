@@ -1,0 +1,4 @@
+FROM alpinelinux/unbound
+COPY config/unbound/unbound.conf /etc/unbound/unbound.conf
+
+EXPOSE 53/TCP 53/UDP
