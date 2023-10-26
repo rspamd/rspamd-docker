@@ -6,7 +6,7 @@ index 50c62ad19..9e8b427ce 100644
  # languages_disable = ["fr", "es"]
  
  # Use the following fasttext model for language detection (if Fasttext support is compiled in)
--# fasttext_model = "${RSPAMD_SHAREDIR}/languages/fasttext_model.ftz"
+-# fasttext_model = "${SHAREDIR}/languages/fasttext_model.ftz"
 +fasttext_model = "${SHAREDIR}/languages/fasttext_model.ftz"
  
  # Prefer fasttext over all other methods
