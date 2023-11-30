@@ -8,8 +8,9 @@
    },
    "steps": [
       {
-         "image": "plugins/docker",
+         "image": "rspamd/drone-docker-plugin",
          "name": "pkg_amd64",
+         "privileged": true,
          "settings": {
             "build_args": [
                "RSPAMD_VERSION=${DRONE_SEMVER_SHORT}",
@@ -34,8 +35,9 @@
          "depends_on": [
             "pkg_amd64"
          ],
-         "image": "plugins/docker",
+         "image": "rspamd/drone-docker-plugin",
          "name": "install_amd64",
+         "privileged": true,
          "settings": {
             "build_args": [
                "LONG_VERSION=${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
@@ -61,8 +63,9 @@
          "depends_on": [
             "pkg_amd64"
          ],
-         "image": "plugins/docker",
+         "image": "rspamd/drone-docker-plugin",
          "name": "install_asan_amd64",
+         "privileged": true,
          "settings": {
             "build_args": [
                "LONG_VERSION=${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
@@ -105,8 +108,9 @@
    },
    "steps": [
       {
-         "image": "plugins/docker",
+         "image": "rspamd/drone-docker-plugin",
          "name": "pkg_arm64",
+         "privileged": true,
          "settings": {
             "build_args": [
                "RSPAMD_VERSION=${DRONE_SEMVER_SHORT}",
@@ -131,8 +135,9 @@
          "depends_on": [
             "pkg_arm64"
          ],
-         "image": "plugins/docker",
+         "image": "rspamd/drone-docker-plugin",
          "name": "install_arm64",
+         "privileged": true,
          "settings": {
             "build_args": [
                "LONG_VERSION=${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
@@ -158,8 +163,9 @@
          "depends_on": [
             "pkg_arm64"
          ],
-         "image": "plugins/docker",
+         "image": "rspamd/drone-docker-plugin",
          "name": "install_asan_arm64",
+         "privileged": true,
          "settings": {
             "build_args": [
                "LONG_VERSION=${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
@@ -389,7 +395,7 @@
 }
 ---
 {
-   "hmac": "fc3654b9dbbe0df54c08e666a6aa1f94606c9d24e37bd94809076091e583600a",
+   "hmac": "7f189a9fe8ac9d55f11ab2be798256fb115d049dadcc26fe7e161f86c861e6fc",
    "kind": "signature"
 }
 ...
