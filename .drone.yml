@@ -270,6 +270,7 @@
             "bash -c \"source $DRONE_WORKSPACE/venv/bin/activate && pip3 install --no-cache --disable-pip-version-check --no-binary :all: setuptools==57.5.0\"",
             "bash -c \"source $DRONE_WORKSPACE/venv/bin/activate && pip3 install --no-cache --disable-pip-version-check --no-binary :all: demjson psutil requests robotframework tornado\"",
             "git clone -b ${DRONE_SEMVER_SHORT} https://github.com/rspamd/rspamd.git",
+            "git -C rspamd cherry-pick 80a16124fbc6af2245231b8c2d03bea4182c181d d2fbce7dd9931431a4446e05aff8fba89b36d875 12e835dd8c2be2488af43c2cdf65d23774f84b53 ca78b09ba291c702707ac24923e53e153f4e9a11",
             "RSPAMD_INSTALLROOT=/usr bash -c \"source $DRONE_WORKSPACE/venv/bin/activate && umask 0000 && robot --removekeywords wuks --exclude isbroken $DRONE_WORKSPACE/rspamd/test/functional/cases\""
          ],
          "image": "rspamd/rspamd:image-amd64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
@@ -301,6 +302,7 @@
             "bash -c \"source $DRONE_WORKSPACE/venv/bin/activate && pip3 install --no-cache --disable-pip-version-check --no-binary :all: setuptools==57.5.0\"",
             "bash -c \"source $DRONE_WORKSPACE/venv/bin/activate && pip3 install --no-cache --disable-pip-version-check --no-binary :all: demjson psutil requests robotframework tornado\"",
             "git clone -b ${DRONE_SEMVER_SHORT} https://github.com/rspamd/rspamd.git",
+            "git -C rspamd cherry-pick 80a16124fbc6af2245231b8c2d03bea4182c181d d2fbce7dd9931431a4446e05aff8fba89b36d875 12e835dd8c2be2488af43c2cdf65d23774f84b53 ca78b09ba291c702707ac24923e53e153f4e9a11",
             "RSPAMD_INSTALLROOT=/usr bash -c \"source $DRONE_WORKSPACE/venv/bin/activate && umask 0000 && robot --removekeywords wuks --exclude isbroken $DRONE_WORKSPACE/rspamd/test/functional/cases\""
          ],
          "image": "rspamd/rspamd:image-arm64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
@@ -395,7 +397,7 @@
 }
 ---
 {
-   "hmac": "7f189a9fe8ac9d55f11ab2be798256fb115d049dadcc26fe7e161f86c861e6fc",
+   "hmac": "429a888f569721b63ce7061ad4f6b0dc58659f51c4e547654c62918f1c82b9a8",
    "kind": "signature"
 }
 ...

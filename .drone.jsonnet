@@ -127,6 +127,7 @@ local prepromotion_test(arch, asan_tag) = {
         'bash -c "source $DRONE_WORKSPACE/venv/bin/activate && pip3 install --no-cache --disable-pip-version-check --no-binary :all: setuptools==57.5.0"', # https://github.com/dmeranda/demjson/issues/43
         'bash -c "source $DRONE_WORKSPACE/venv/bin/activate && pip3 install --no-cache --disable-pip-version-check --no-binary :all: demjson psutil requests robotframework tornado"',
         'git clone -b ${DRONE_SEMVER_SHORT} https://github.com/rspamd/rspamd.git',
+        'git -C rspamd cherry-pick 80a16124fbc6af2245231b8c2d03bea4182c181d d2fbce7dd9931431a4446e05aff8fba89b36d875 12e835dd8c2be2488af43c2cdf65d23774f84b53 ca78b09ba291c702707ac24923e53e153f4e9a11',
         'RSPAMD_INSTALLROOT=/usr bash -c "source $DRONE_WORKSPACE/venv/bin/activate && umask 0000 && robot --removekeywords wuks --exclude isbroken $DRONE_WORKSPACE/rspamd/test/functional/cases"',
       ],
     },
