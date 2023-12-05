@@ -1,4 +1,10 @@
 {
+  // configmaps for user's rspamd configuration files
+  configmaps: {
+    root: {},
+    locald: {},
+    overrided: {},
+  },
   // should we create our namespace
   create_namespace: true,
   // name for dbdir volume
