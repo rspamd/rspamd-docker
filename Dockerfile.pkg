@@ -1,6 +1,7 @@
 ARG ASAN_TAG
 ARG DEBIAN_RELEASE=bookworm
-ARG RSPAMD_VERSION=3.6
+ARG RSPAMD_GIT
+ARG RSPAMD_VERSION
 ARG TARGETARCH
 
 FROM rspamd/pkg:debian-${DEBIAN_RELEASE} AS build
@@ -9,14 +10,16 @@ RUN mkdir /build /deb && chown nobody:nogroup /build /deb \
 	&& apt-get update \
 	&& apt-get install -y libfasttext-dev
 
+ARG RSPAMD_GIT
 ARG RSPAMD_VERSION
+ENV RSPAMD_GIT=$RSPAMD_GIT
 ENV RSPAMD_VERSION=$RSPAMD_VERSION
 
 USER nobody
 WORKDIR /build
 COPY patches/ /patches/
 
-RUN	git clone -b ${RSPAMD_VERSION} https://github.com/rspamd/rspamd.git \
+RUN	git clone -b ${RSPAMD_GIT} https://github.com/rspamd/rspamd.git \
 	&& cd rspamd \
 	&& git apply /patches/*.diff \
 	&& sed -i s/\(.*\)/\(${RSPAMD_VERSION}\)/ debian/changelog \
