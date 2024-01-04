@@ -1,8 +1,8 @@
 ARG DEBIAN_RELEASE=bookworm
-ARG LONG_VERSION
+ARG PKG_TAG
 ARG TARGETARCH
 
-FROM rspamd/rspamd:pkg-${TARGETARCH}-${LONG_VERSION} AS pkg
+FROM rspamd/rspamd:${PKG_TAG} AS pkg
 FROM --platform=linux/${TARGETARCH} debian:${DEBIAN_RELEASE}-slim AS install
 
 ARG ASAN_TAG

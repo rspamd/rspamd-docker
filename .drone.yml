@@ -13,6 +13,7 @@
          "privileged": true,
          "settings": {
             "build_args": [
+               "RSPAMD_GIT=${DRONE_SEMVER_SHORT}",
                "RSPAMD_VERSION=${DRONE_SEMVER_SHORT}",
                "TARGETARCH=amd64"
             ],
@@ -40,7 +41,7 @@
          "privileged": true,
          "settings": {
             "build_args": [
-               "LONG_VERSION=${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
+               "PKG_TAG=pkg-amd64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
                "TARGETARCH=amd64"
             ],
             "dockerfile": "Dockerfile",
@@ -68,7 +69,7 @@
          "privileged": true,
          "settings": {
             "build_args": [
-               "LONG_VERSION=${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
+               "PKG_TAG=pkg-amd64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
                "TARGETARCH=amd64",
                "ASAN_TAG=-asan"
             ],
@@ -113,6 +114,7 @@
          "privileged": true,
          "settings": {
             "build_args": [
+               "RSPAMD_GIT=${DRONE_SEMVER_SHORT}",
                "RSPAMD_VERSION=${DRONE_SEMVER_SHORT}",
                "TARGETARCH=arm64"
             ],
@@ -140,7 +142,7 @@
          "privileged": true,
          "settings": {
             "build_args": [
-               "LONG_VERSION=${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
+               "PKG_TAG=pkg-arm64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
                "TARGETARCH=arm64"
             ],
             "dockerfile": "Dockerfile",
@@ -168,7 +170,7 @@
          "privileged": true,
          "settings": {
             "build_args": [
-               "LONG_VERSION=${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
+               "PKG_TAG=pkg-arm64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
                "TARGETARCH=arm64",
                "ASAN_TAG=-asan"
             ],
@@ -193,6 +195,208 @@
       "event": {
          "include": [
             "tag"
+         ]
+      }
+   },
+   "type": "docker"
+}
+---
+{
+   "kind": "pipeline",
+   "name": "cron_rspamd_amd64",
+   "platform": {
+      "arch": "amd64",
+      "os": "linux"
+   },
+   "steps": [
+      {
+         "image": "rspamd/drone-docker-plugin",
+         "name": "pkg_amd64",
+         "privileged": true,
+         "settings": {
+            "build_args": [
+               "RSPAMD_GIT=master",
+               "RSPAMD_VERSION=${DRONE_BUILD_CREATED}",
+               "TARGETARCH=amd64"
+            ],
+            "dockerfile": "Dockerfile.pkg",
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platform": "linux/amd64",
+            "repo": "rspamd/rspamd",
+            "tags": [
+               "pkg-amd64-nightly"
+            ],
+            "target": "pkg",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      },
+      {
+         "depends_on": [
+            "pkg_amd64"
+         ],
+         "image": "rspamd/drone-docker-plugin",
+         "name": "install_amd64",
+         "privileged": true,
+         "settings": {
+            "build_args": [
+               "PKG_TAG=pkg-amd64-nightly",
+               "TARGETARCH=amd64"
+            ],
+            "dockerfile": "Dockerfile",
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platform": "linux/amd64",
+            "repo": "rspamd/rspamd",
+            "squash": true,
+            "tags": [
+               "nightly-amd64"
+            ],
+            "target": "install",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      },
+      {
+         "depends_on": [
+            "pkg_amd64"
+         ],
+         "image": "rspamd/drone-docker-plugin",
+         "name": "install_asan_amd64",
+         "privileged": true,
+         "settings": {
+            "build_args": [
+               "PKG_TAG=pkg-amd64-nightly",
+               "TARGETARCH=amd64",
+               "ASAN_TAG=-asan"
+            ],
+            "dockerfile": "Dockerfile",
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platform": "linux/amd64",
+            "repo": "rspamd/rspamd",
+            "squash": true,
+            "tags": [
+               "nightly-asan-amd64"
+            ],
+            "target": "install",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      }
+   ],
+   "trigger": {
+      "event": {
+         "include": [
+            "cron"
+         ]
+      }
+   },
+   "type": "docker"
+}
+---
+{
+   "kind": "pipeline",
+   "name": "cron_rspamd_arm64",
+   "platform": {
+      "arch": "arm64",
+      "os": "linux"
+   },
+   "steps": [
+      {
+         "image": "rspamd/drone-docker-plugin",
+         "name": "pkg_arm64",
+         "privileged": true,
+         "settings": {
+            "build_args": [
+               "RSPAMD_GIT=master",
+               "RSPAMD_VERSION=${DRONE_BUILD_CREATED}",
+               "TARGETARCH=arm64"
+            ],
+            "dockerfile": "Dockerfile.pkg",
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platform": "linux/arm64",
+            "repo": "rspamd/rspamd",
+            "tags": [
+               "pkg-arm64-nightly"
+            ],
+            "target": "pkg",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      },
+      {
+         "depends_on": [
+            "pkg_arm64"
+         ],
+         "image": "rspamd/drone-docker-plugin",
+         "name": "install_arm64",
+         "privileged": true,
+         "settings": {
+            "build_args": [
+               "PKG_TAG=pkg-arm64-nightly",
+               "TARGETARCH=arm64"
+            ],
+            "dockerfile": "Dockerfile",
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platform": "linux/arm64",
+            "repo": "rspamd/rspamd",
+            "squash": true,
+            "tags": [
+               "nightly-arm64"
+            ],
+            "target": "install",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      },
+      {
+         "depends_on": [
+            "pkg_arm64"
+         ],
+         "image": "rspamd/drone-docker-plugin",
+         "name": "install_asan_arm64",
+         "privileged": true,
+         "settings": {
+            "build_args": [
+               "PKG_TAG=pkg-arm64-nightly",
+               "TARGETARCH=arm64",
+               "ASAN_TAG=-asan"
+            ],
+            "dockerfile": "Dockerfile",
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platform": "linux/arm64",
+            "repo": "rspamd/rspamd",
+            "squash": true,
+            "tags": [
+               "nightly-asan-arm64"
+            ],
+            "target": "install",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      }
+   ],
+   "trigger": {
+      "event": {
+         "include": [
+            "cron"
          ]
       }
    },
@@ -278,9 +482,11 @@
       }
    ],
    "trigger": {
-      "event": [
-         "promote"
-      ]
+      "event": {
+         "include": [
+            "promote"
+         ]
+      }
    },
    "type": "docker"
 }
@@ -309,9 +515,83 @@
       }
    ],
    "trigger": {
-      "event": [
-         "promote"
-      ]
+      "event": {
+         "include": [
+            "promote"
+         ]
+      }
+   },
+   "type": "docker"
+}
+---
+{
+   "depends_on": [
+      "cron_rspamd_amd64"
+   ],
+   "kind": "pipeline",
+   "name": "cron_prepromo_amd64",
+   "platform": {
+      "arch": "amd64",
+      "os": "linux"
+   },
+   "steps": [
+      {
+         "commands": [
+            "apt-get update",
+            "apt-get install -y git miltertest python3 python3-dev python3-pip python3-venv redis-server",
+            "python3 -mvenv $DRONE_WORKSPACE/venv",
+            "bash -c \"source $DRONE_WORKSPACE/venv/bin/activate && pip3 install --no-cache --disable-pip-version-check --no-binary :all: setuptools==57.5.0\"",
+            "bash -c \"source $DRONE_WORKSPACE/venv/bin/activate && pip3 install --no-cache --disable-pip-version-check --no-binary :all: demjson psutil requests robotframework tornado\"",
+            "git clone -b master https://github.com/rspamd/rspamd.git",
+            "RSPAMD_INSTALLROOT=/usr bash -c \"source $DRONE_WORKSPACE/venv/bin/activate && umask 0000 && robot --removekeywords wuks --exclude isbroken $DRONE_WORKSPACE/rspamd/test/functional/cases\""
+         ],
+         "image": "rspamd/rspamd:nightly-amd64",
+         "name": "pre_promotion_test",
+         "user": "root"
+      }
+   ],
+   "trigger": {
+      "event": {
+         "include": [
+            "cron"
+         ]
+      }
+   },
+   "type": "docker"
+}
+---
+{
+   "depends_on": [
+      "cron_rspamd_arm64"
+   ],
+   "kind": "pipeline",
+   "name": "cron_prepromo_arm64",
+   "platform": {
+      "arch": "arm64",
+      "os": "linux"
+   },
+   "steps": [
+      {
+         "commands": [
+            "apt-get update",
+            "apt-get install -y git miltertest python3 python3-dev python3-pip python3-venv redis-server",
+            "python3 -mvenv $DRONE_WORKSPACE/venv",
+            "bash -c \"source $DRONE_WORKSPACE/venv/bin/activate && pip3 install --no-cache --disable-pip-version-check --no-binary :all: setuptools==57.5.0\"",
+            "bash -c \"source $DRONE_WORKSPACE/venv/bin/activate && pip3 install --no-cache --disable-pip-version-check --no-binary :all: demjson psutil requests robotframework tornado\"",
+            "git clone -b master https://github.com/rspamd/rspamd.git",
+            "RSPAMD_INSTALLROOT=/usr bash -c \"source $DRONE_WORKSPACE/venv/bin/activate && umask 0000 && robot --removekeywords wuks --exclude isbroken $DRONE_WORKSPACE/rspamd/test/functional/cases\""
+         ],
+         "image": "rspamd/rspamd:nightly-arm64",
+         "name": "pre_promotion_test",
+         "user": "root"
+      }
+   ],
+   "trigger": {
+      "event": {
+         "include": [
+            "cron"
+         ]
+      }
    },
    "type": "docker"
 }
@@ -348,9 +628,11 @@
       }
    ],
    "trigger": {
-      "event": [
-         "promote"
-      ]
+      "event": {
+         "include": [
+            "promote"
+         ]
+      }
    },
    "type": "docker"
 }
@@ -387,15 +669,91 @@
       }
    ],
    "trigger": {
-      "event": [
-         "promote"
-      ]
+      "event": {
+         "include": [
+            "promote"
+         ]
+      }
    },
    "type": "docker"
 }
 ---
 {
-   "hmac": "7f189a9fe8ac9d55f11ab2be798256fb115d049dadcc26fe7e161f86c861e6fc",
+   "depends_on": [
+      "cron_prepromo_amd64",
+      "cron_prepromo_arm64"
+   ],
+   "kind": "pipeline",
+   "name": "cron-promotion",
+   "steps": [
+      {
+         "image": "plugins/manifest",
+         "name": "cron_promotion",
+         "settings": {
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platforms": [
+               "linux/amd64",
+               "linux/arm64"
+            ],
+            "target": "rspamd/rspamd:nightly",
+            "template": "rspamd/rspamd:nightly-ARCH",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      }
+   ],
+   "trigger": {
+      "event": {
+         "include": [
+            "cron"
+         ]
+      }
+   },
+   "type": "docker"
+}
+---
+{
+   "depends_on": [
+      "cron_prepromo_amd64",
+      "cron_prepromo_arm64"
+   ],
+   "kind": "pipeline",
+   "name": "cron-asan-promotion",
+   "steps": [
+      {
+         "image": "plugins/manifest",
+         "name": "cron_promotion",
+         "settings": {
+            "password": {
+               "from_secret": "docker_password"
+            },
+            "platforms": [
+               "linux/amd64",
+               "linux/arm64"
+            ],
+            "target": "rspamd/rspamd:asan-nightly",
+            "template": "rspamd/rspamd:nightly-asan-ARCH",
+            "username": {
+               "from_secret": "docker_username"
+            }
+         }
+      }
+   ],
+   "trigger": {
+      "event": {
+         "include": [
+            "cron"
+         ]
+      }
+   },
+   "type": "docker"
+}
+---
+{
+   "hmac": "7343ce656aef6488105855366de37e6bab61e8fd09a9dd60056db0f1ecac70a4",
    "kind": "signature"
 }
 ...
