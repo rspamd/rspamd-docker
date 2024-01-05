@@ -216,7 +216,7 @@
          "settings": {
             "build_args": [
                "RSPAMD_GIT=master",
-               "RSPAMD_VERSION=${DRONE_BUILD_CREATED}",
+               "RSPAMD_VERSION=auto",
                "TARGETARCH=amd64"
             ],
             "dockerfile": "Dockerfile.pkg",
@@ -317,7 +317,7 @@
          "settings": {
             "build_args": [
                "RSPAMD_GIT=master",
-               "RSPAMD_VERSION=${DRONE_BUILD_CREATED}",
+               "RSPAMD_VERSION=auto",
                "TARGETARCH=arm64"
             ],
             "dockerfile": "Dockerfile.pkg",
@@ -753,7 +753,7 @@
 }
 ---
 {
-   "hmac": "7343ce656aef6488105855366de37e6bab61e8fd09a9dd60056db0f1ecac70a4",
+   "hmac": "0359f91fb3bff0f1d3e8e0d271c4b17543d02c186f7997ad0fe253b272d3492b",
    "kind": "signature"
 }
 ...

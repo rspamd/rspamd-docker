@@ -22,7 +22,7 @@ COPY patches/ /patches/
 RUN	git clone -b ${RSPAMD_GIT} https://github.com/rspamd/rspamd.git \
 	&& cd rspamd \
 	&& git apply /patches/*.diff \
-	&& sed -i s/\(.*\)/\(${RSPAMD_VERSION}\)/ debian/changelog \
+	&& bash -c "if [ ${RSPAMD_VERSION} == 'auto' ]; then sed -i s/\(.*\)/\($((16#`git log -n1 --pretty='%h'`))\)/ debian/changelog; else sed -i s/\(.*\)/\(${RSPAMD_VERSION}\)/ debian/changelog; fi" \
 	&& sed -i s/quilt/native/ debian/source/format \
 	&& debuild -us -uc \
 	&& mv /build/*.deb /deb/
