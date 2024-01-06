@@ -206,8 +206,8 @@ local cron_prepromo_splice(arch) = {
 [
   architecture_specific_pipeline('amd64'),
   architecture_specific_pipeline('arm64'),
-  architecture_specific_pipeline('amd64', cron_image_tags, cron_pkg_tags, 'master', '${DRONE_BUILD_CREATED}') + cron_archspecific_splice('amd64'),
-  architecture_specific_pipeline('arm64', cron_image_tags, cron_pkg_tags, 'master', '${DRONE_BUILD_CREATED}') + cron_archspecific_splice('arm64'),
+  architecture_specific_pipeline('amd64', cron_image_tags, cron_pkg_tags, 'master', 'auto') + cron_archspecific_splice('amd64'),
+  architecture_specific_pipeline('arm64', cron_image_tags, cron_pkg_tags, 'master', 'auto') + cron_archspecific_splice('arm64'),
   multiarch_pipeline,
   prepromotion_test('amd64'),
   prepromotion_test('arm64'),
