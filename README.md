@@ -14,11 +14,15 @@ Volumes or bind mounts should be used for the `/var/lib/rspamd` directory and op
 
 ## Tags
 
+Version numbers below are for illustration only & may not reflect latest release, refer to [repo tags](https://github.com/rspamd/rspamd/tags) for actual latest Rspamd version (or use `latest` tag).
+
 | tag | description |
 |-----|-------------|
 | latest | latest stable release |
-| 3.7 | latest stable release in 3.7 series |
-| 3.7.4 | latest build of version 3.7.4 |
+| 3.8 | latest stable release in 3.8 series |
+| 3.8.0 | latest build of version 3.8.0 |
+| nightly | unstable rolling release, built nightly |
+| asan-latest, asan-3.8, asan-3.8.0, asan-nightly | ASAN variants of images |
 
 ## Container orchestration
 
