@@ -43,6 +43,7 @@ local architecture_specific_pipeline(arch, get_image_tags=image_tags, get_pkg_ta
       'pkg_' + arch,
     ],
     image: 'rspamd/drone-docker-plugin',
+    pull: 'always',
     privileged: true,
     settings: {
       local asan_build_tag = if std.length(asan_tag) != 0 then ['ASAN_TAG=' + asan_tag] else [],
@@ -65,6 +66,7 @@ local architecture_specific_pipeline(arch, get_image_tags=image_tags, get_pkg_ta
     {
       name: 'pkg_' + arch,
       image: 'rspamd/drone-docker-plugin',
+      pull: 'always',
       privileged: true,
       settings: {
         dockerfile: 'Dockerfile.pkg',
@@ -91,6 +93,7 @@ local multiarch_pipeline = {
   local multiarch_step(step_name, asan_tag) = {
     name: step_name,
     image: 'plugins/manifest',
+    pull: 'always',
     settings: {
       target: std.format('%s:image%s-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}', [rspamd_image, asan_tag]),
       template: std.format('%s:image%s-ARCH-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}', [rspamd_image, asan_tag]),
@@ -122,6 +125,7 @@ local prepromotion_test(arch, get_image_name=promo_get_image_name, branch_name='
     {
       name: 'pre_promotion_test',
       image: get_image_name(rspamd_image, arch),
+      pull: 'always',
       user: 'root',
       commands: [
         'apt-get update',
@@ -146,6 +150,7 @@ local promotion_multiarch(name, step_name, asan_tag) = {
     {
       name: step_name,
       image: 'plugins/manifest',
+      pull: 'always',
       settings: {
         target: std.format('%s:%s${DRONE_SEMVER_SHORT}', [rspamd_image, asan_tag]),
         template: std.format('%s:image-%sARCH-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}', [rspamd_image, asan_tag]),
@@ -172,6 +177,7 @@ local cron_promotion(asan_tag) = {
     {
       name: 'cron_promotion',
       image: 'plugins/manifest',
+      pull: 'always',
       settings: {
         target: std.format('%s:%snightly', [rspamd_image, asan_tag]),
         template: std.format('%s:nightly-%sARCH', [rspamd_image, asan_tag]),

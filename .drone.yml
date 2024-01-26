@@ -11,6 +11,7 @@
          "image": "rspamd/drone-docker-plugin",
          "name": "pkg_amd64",
          "privileged": true,
+         "pull": "always",
          "settings": {
             "build_args": [
                "RSPAMD_GIT=${DRONE_SEMVER_SHORT}",
@@ -39,6 +40,7 @@
          "image": "rspamd/drone-docker-plugin",
          "name": "install_amd64",
          "privileged": true,
+         "pull": "always",
          "settings": {
             "build_args": [
                "PKG_TAG=pkg-amd64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
@@ -67,6 +69,7 @@
          "image": "rspamd/drone-docker-plugin",
          "name": "install_asan_amd64",
          "privileged": true,
+         "pull": "always",
          "settings": {
             "build_args": [
                "PKG_TAG=pkg-amd64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
@@ -112,6 +115,7 @@
          "image": "rspamd/drone-docker-plugin",
          "name": "pkg_arm64",
          "privileged": true,
+         "pull": "always",
          "settings": {
             "build_args": [
                "RSPAMD_GIT=${DRONE_SEMVER_SHORT}",
@@ -140,6 +144,7 @@
          "image": "rspamd/drone-docker-plugin",
          "name": "install_arm64",
          "privileged": true,
+         "pull": "always",
          "settings": {
             "build_args": [
                "PKG_TAG=pkg-arm64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
@@ -168,6 +173,7 @@
          "image": "rspamd/drone-docker-plugin",
          "name": "install_asan_arm64",
          "privileged": true,
+         "pull": "always",
          "settings": {
             "build_args": [
                "PKG_TAG=pkg-arm64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
@@ -213,6 +219,7 @@
          "image": "rspamd/drone-docker-plugin",
          "name": "pkg_amd64",
          "privileged": true,
+         "pull": "always",
          "settings": {
             "build_args": [
                "RSPAMD_GIT=master",
@@ -241,6 +248,7 @@
          "image": "rspamd/drone-docker-plugin",
          "name": "install_amd64",
          "privileged": true,
+         "pull": "always",
          "settings": {
             "build_args": [
                "PKG_TAG=pkg-amd64-nightly",
@@ -269,6 +277,7 @@
          "image": "rspamd/drone-docker-plugin",
          "name": "install_asan_amd64",
          "privileged": true,
+         "pull": "always",
          "settings": {
             "build_args": [
                "PKG_TAG=pkg-amd64-nightly",
@@ -314,6 +323,7 @@
          "image": "rspamd/drone-docker-plugin",
          "name": "pkg_arm64",
          "privileged": true,
+         "pull": "always",
          "settings": {
             "build_args": [
                "RSPAMD_GIT=master",
@@ -342,6 +352,7 @@
          "image": "rspamd/drone-docker-plugin",
          "name": "install_arm64",
          "privileged": true,
+         "pull": "always",
          "settings": {
             "build_args": [
                "PKG_TAG=pkg-arm64-nightly",
@@ -370,6 +381,7 @@
          "image": "rspamd/drone-docker-plugin",
          "name": "install_asan_arm64",
          "privileged": true,
+         "pull": "always",
          "settings": {
             "build_args": [
                "PKG_TAG=pkg-arm64-nightly",
@@ -414,6 +426,7 @@
       {
          "image": "plugins/manifest",
          "name": "multiarch_image",
+         "pull": "always",
          "settings": {
             "password": {
                "from_secret": "docker_password"
@@ -432,6 +445,7 @@
       {
          "image": "plugins/manifest",
          "name": "multiarch_asan_image",
+         "pull": "always",
          "settings": {
             "password": {
                "from_secret": "docker_password"
@@ -478,6 +492,7 @@
          ],
          "image": "rspamd/rspamd:image-amd64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
          "name": "pre_promotion_test",
+         "pull": "always",
          "user": "root"
       }
    ],
@@ -511,6 +526,7 @@
          ],
          "image": "rspamd/rspamd:image-arm64-${DRONE_SEMVER_SHORT}-${DRONE_SEMVER_BUILD}",
          "name": "pre_promotion_test",
+         "pull": "always",
          "user": "root"
       }
    ],
@@ -547,6 +563,7 @@
          ],
          "image": "rspamd/rspamd:nightly-amd64",
          "name": "pre_promotion_test",
+         "pull": "always",
          "user": "root"
       }
    ],
@@ -583,6 +600,7 @@
          ],
          "image": "rspamd/rspamd:nightly-arm64",
          "name": "pre_promotion_test",
+         "pull": "always",
          "user": "root"
       }
    ],
@@ -607,6 +625,7 @@
       {
          "image": "plugins/manifest",
          "name": "promote_multiarch",
+         "pull": "always",
          "settings": {
             "password": {
                "from_secret": "docker_password"
@@ -648,6 +667,7 @@
       {
          "image": "plugins/manifest",
          "name": "promote_multiarch_asan",
+         "pull": "always",
          "settings": {
             "password": {
                "from_secret": "docker_password"
@@ -689,6 +709,7 @@
       {
          "image": "plugins/manifest",
          "name": "cron_promotion",
+         "pull": "always",
          "settings": {
             "password": {
                "from_secret": "docker_password"
@@ -726,6 +747,7 @@
       {
          "image": "plugins/manifest",
          "name": "cron_promotion",
+         "pull": "always",
          "settings": {
             "password": {
                "from_secret": "docker_password"
@@ -753,7 +775,7 @@
 }
 ---
 {
-   "hmac": "0359f91fb3bff0f1d3e8e0d271c4b17543d02c186f7997ad0fe253b272d3492b",
+   "hmac": "131839e247c3ab48953c3e432e77a045cbccd4d246f23fdc09410dbc882f2107",
    "kind": "signature"
 }
 ...
