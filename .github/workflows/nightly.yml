@@ -1,0 +1,14 @@
+name: nightly
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  nightly:
+    uses: ./.github/workflows/docker_build.yml
+    with:
+      nightly: true
+    permissions:
+      packages: write
+      contents: read
