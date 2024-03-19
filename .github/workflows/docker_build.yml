@@ -41,8 +41,16 @@ jobs:
       - name: Set release-specific variables
         if: ${{ ! inputs.nightly }}
         run: |
-          echo "IMG_TAGS_ASAN=ghcr.io/${{ github.repository }}:asan-latest" >> "$GITHUB_ENV"
-          echo "IMG_TAGS_RELEASE=ghcr.io/${{ github.repository }}:latest" >> "$GITHUB_ENV"
+          export VERSION_BUILD=`echo ${{ github.ref_name }} | sed s/^v// | sed 's/\+/-/'`
+          echo "VERSION_BUILD=${VERSION_BUILD}" >> "$GITHUB_ENV"
+          export VERSION_FULL=`echo ${{ github.ref_name }} | sed s/^v// | sed 's/\+.*//'`
+          echo "VERSION_FULL=${VERSION_FULL}" >> "$GITHUB_ENV"
+          export VERSION_MAJOR_MINOR=${VERSION_FULL%.*}
+          echo "VERSION_MAJOR_MINOR=${VERSION_MAJOR_MINOR}" >> "$GITHUB_ENV"
+          export VERSION_MAJOR=`echo ${{ github.ref_name }} | sed s/^v// | sed 's/[^0-9].*//'`
+          echo "VERSION_MAJOR=${VERSION_MAJOR}" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_ASAN=ghcr.io/${{ github.repository }}:asan-latest,ghcr.io/${{ github.repository }}:asan-${VERSION_BUILD},ghcr.io/${{ github.repository }}:asan-${VERSION_FULL},ghcr.io/${{ github.repository }}:asan-${VERSION_MAJOR_MINOR},ghcr.io/${{ github.repository }}:asan-${VERSION_MAJOR}" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_RELEASE=ghcr.io/${{ github.repository }}:latest,ghcr.io/${{ github.repository }}:${VERSION_BUILD},ghcr.io/${{ github.repository }}:${VERSION_FULL},ghcr.io/${{ github.repository }}:${VERSION_MAJOR_MINOR},ghcr.io/${{ github.repository }}:${VERSION_MAJOR}" >> "$GITHUB_ENV"
           echo "PKG_TAG_SUFFIX=-`echo ${{ github.ref_name }} | sed s/+/-/ | sed s/^v//`" >> "$GITHUB_ENV"
           echo "RSPAMD_GIT=`echo ${{ github.ref_name }} | sed s/^v// | sed s/+.*//`" >> "$GITHUB_ENV"
           echo "RSPAMD_VERSION=`echo ${{ github.ref_name }} | sed s/^v// | sed s/+.*//`" >> "$GITHUB_ENV"
