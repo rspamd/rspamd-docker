@@ -5,10 +5,28 @@ on:
     - cron: "0 0 * * *"
 
 jobs:
-  nightly:
+  build:
     uses: ./.github/workflows/docker_build.yml
     with:
       nightly: true
     permissions:
       packages: write
       contents: read
+    secrets: inherit
+
+  test:
+    needs: [build]
+    uses: ./.github/workflows/rspamd_test.yml
+    with:
+      image: ghcr.io/${{ github.repository }}:nightly
+      tag: "${{ needs.build.outputs.tag }}"
+
+  promote:
+    needs: [test]
+    uses: ./.github/workflows/promote.yml
+    with:
+      image: ghcr.io/${{ github.repository }}:nightly
+      image_asan: ghcr.io/${{ github.repository }}:asan-nightly
+      dockerhub_tags_asan: "${{ needs.build.outputs.dockerhub_tags_asan }}"
+      dockerhub_tags_release: "${{ needs.build.outputs.dockerhub_tags_release }}"
+    secrets: inherit
