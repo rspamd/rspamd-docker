@@ -22,7 +22,7 @@ jobs:
       tag: "${{ needs.build.outputs.tag }}"
 
   promote:
-    needs: [test]
+    needs: [build, test]
     uses: ./.github/workflows/promote.yml
     with:
       image: ghcr.io/${{ github.repository }}:nightly
