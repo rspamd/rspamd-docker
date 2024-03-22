@@ -40,7 +40,6 @@ jobs:
           for tag in ${tags[@]}
           do
             docker buildx imagetools create -t ${tag} ${{ inputs.image }}
-            docker push ${tag}
           done
 
       - name: Push ASAN image
@@ -50,5 +49,4 @@ jobs:
           for tag in ${tags[@]}
           do
             docker buildx imagetools create -t ${tag} ${{ inputs.image_asan }}
-            docker push ${tag}
           done
