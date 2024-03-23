@@ -1,0 +1,127 @@
+name: Publish Docker image
+
+on:
+  workflow_call:
+    inputs:
+      dockerhub_name:
+        default: rspamd/rspamd
+        required: false
+        type: string
+      nightly:
+        default: true
+        required: false
+        type: boolean
+    outputs:
+      dockerhub_tags_asan:
+        description: "Tags to set in Dockerhub (ASAN)"
+        value: ${{ jobs.docker_build.outputs.dockerhub_tags_asan }}
+      dockerhub_tags_release:
+        description: "Tags to set in Dockerhub (release)"
+        value: ${{ jobs.docker_build.outputs.dockerhub_tags_release }}
+      tag:
+        description: "Tag in rspamd repo to check out for tests"
+        value: ${{ jobs.docker_build.outputs.tag }}
+
+jobs:
+  docker_build:
+    outputs:
+      dockerhub_tags_asan: ${{ steps.save_output.outputs.dockerhub_tags_asan }}
+      dockerhub_tags_release: ${{ steps.save_output.outputs.dockerhub_tags_release }}
+      tag: ${{ steps.save_output.outputs.tag }}
+    runs-on: ["ubuntu-latest"]
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Dockerhub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set nightly-specific variables
+        if: ${{ inputs.nightly }}
+        run: |
+          echo "IMG_TAGS_GHCR_ASAN=ghcr.io/${{ github.repository }}:asan-nightly" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_GHCR_RELEASE=ghcr.io/${{ github.repository }}:nightly" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_DOCKERHUB_ASAN=${{ inputs.dockerhub_name }}:asan-nightly" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_DOCKERHUB_RELEASE=${{ inputs.dockerhub_name }}:nightly" >> "$GITHUB_ENV"
+          echo "PKG_TAG_SUFFIX=-nightly" >> "$GITHUB_ENV"
+          echo "RSPAMD_GIT=master" >> "$GITHUB_ENV"
+          echo "RSPAMD_VERSION=auto" >> "$GITHUB_ENV"
+
+      - name: Set release-specific variables
+        if: ${{ ! inputs.nightly }}
+        run: |
+          export VERSION_BUILD=`echo ${{ github.ref_name }} | sed s/^v// | sed 's/\+/-/'`
+          echo "VERSION_BUILD=${VERSION_BUILD}" >> "$GITHUB_ENV"
+          export VERSION_FULL=`echo ${{ github.ref_name }} | sed s/^v// | sed 's/\+.*//'`
+          echo "VERSION_FULL=${VERSION_FULL}" >> "$GITHUB_ENV"
+          export VERSION_MAJOR_MINOR=${VERSION_FULL%.*}
+          echo "VERSION_MAJOR_MINOR=${VERSION_MAJOR_MINOR}" >> "$GITHUB_ENV"
+          export VERSION_MAJOR=`echo ${{ github.ref_name }} | sed s/^v// | sed 's/[^0-9].*//'`
+          echo "VERSION_MAJOR=${VERSION_MAJOR}" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_DOCKERHUB_ASAN=${{ inputs.dockerhub_name }}:asan-latest,${{ inputs.dockerhub_name }}:asan-${VERSION_BUILD},${{ inputs.dockerhub_name }}:asan-${VERSION_FULL},${{ inputs.dockerhub_name }}:asan-${VERSION_MAJOR_MINOR},${{ inputs.dockerhub_name }}:asan-${VERSION_MAJOR}" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_GHCR_ASAN=ghcr.io/${{ github.repository }}:asan-latest,ghcr.io/${{ github.repository }}:asan-${VERSION_BUILD},ghcr.io/${{ github.repository }}:asan-${VERSION_FULL},ghcr.io/${{ github.repository }}:asan-${VERSION_MAJOR_MINOR},ghcr.io/${{ github.repository }}:asan-${VERSION_MAJOR}" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_DOCKERHUB_RELEASE=${{ inputs.dockerhub_name }}:latest,${{ inputs.dockerhub_name }}:${VERSION_BUILD},${{ inputs.dockerhub_name }}:${VERSION_FULL},${{ inputs.dockerhub_name }}:${VERSION_MAJOR_MINOR},${{ inputs.dockerhub_name }}:${VERSION_MAJOR}" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_GHCR_RELEASE=ghcr.io/${{ github.repository }}:latest,ghcr.io/${{ github.repository }}:${VERSION_BUILD},ghcr.io/${{ github.repository }}:${VERSION_FULL},ghcr.io/${{ github.repository }}:${VERSION_MAJOR_MINOR},ghcr.io/${{ github.repository }}:${VERSION_MAJOR}" >> "$GITHUB_ENV"
+          echo "PKG_TAG_SUFFIX=-`echo ${{ github.ref_name }} | sed s/+/-/ | sed s/^v//`" >> "$GITHUB_ENV"
+          echo "RSPAMD_GIT=`echo ${{ github.ref_name }} | sed s/^v// | sed s/+.*//`" >> "$GITHUB_ENV"
+          echo "RSPAMD_VERSION=`echo ${{ github.ref_name }} | sed s/^v// | sed s/+.*//`" >> "$GITHUB_ENV"
+
+      - name: Save output
+        id: save_output
+        run: |
+          echo "dockerhub_tags_asan=${{ env.IMG_TAGS_DOCKERHUB_ASAN }}" >> $GITHUB_OUTPUT
+          echo "dockerhub_tags_release=${{ env.IMG_TAGS_DOCKERHUB_RELEASE }}" >> $GITHUB_OUTPUT
+          echo "tag=${{ env.RSPAMD_GIT }}" >> $GITHUB_OUTPUT
+
+      - name: Build pkg image
+        uses: docker/build-push-action@v5
+        with:
+          build-args: |
+            RSPAMD_GIT=${{ env.RSPAMD_GIT }}
+            RSPAMD_VERSION=${{ env.RSPAMD_VERSION }}
+          file: Dockerfile.pkg
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ghcr.io/${{ github.repository }}:pkg${{ env.PKG_TAG_SUFFIX }}
+
+      - name: Build release image
+        uses: docker/build-push-action@v5
+        with:
+          build-args: |
+            PKG_IMG=ghcr.io/${{ github.repository }}
+            PKG_TAG=pkg${{ env.PKG_TAG_SUFFIX }}
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.IMG_TAGS_GHCR_RELEASE }}
+
+      - name: Build ASAN image
+        uses: docker/build-push-action@v5
+        with:
+          build-args: |
+            ASAN_TAG=-asan
+            PKG_IMG=ghcr.io/${{ github.repository }}
+            PKG_TAG=pkg${{ env.PKG_TAG_SUFFIX }}
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.IMG_TAGS_GHCR_ASAN }}

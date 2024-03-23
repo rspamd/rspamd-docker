@@ -1,0 +1,33 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+\\+[0-9]+"
+
+jobs:
+  build:
+    uses: ./.github/workflows/docker_build.yml
+    with:
+      nightly: false
+    permissions:
+      packages: write
+      contents: read
+    secrets: inherit
+
+  test:
+    needs: [build]
+    uses: ./.github/workflows/rspamd_test.yml
+    with:
+      image: ghcr.io/${{ github.repository }}:latest
+      tag: "${{ needs.build.outputs.tag }}"
+
+  promote:
+    needs: [build, test]
+    uses: ./.github/workflows/promote.yml
+    with:
+      image: ghcr.io/${{ github.repository }}:latest
+      image_asan: ghcr.io/${{ github.repository }}:asan-latest
+      dockerhub_tags_asan: "${{ needs.build.outputs.dockerhub_tags_asan }}"
+      dockerhub_tags_release: "${{ needs.build.outputs.dockerhub_tags_release }}"
+    secrets: inherit

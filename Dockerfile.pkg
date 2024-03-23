@@ -4,7 +4,7 @@ ARG RSPAMD_GIT
 ARG RSPAMD_VERSION
 ARG TARGETARCH
 
-FROM rspamd/pkg:debian-${DEBIAN_RELEASE} AS build
+FROM ghcr.io/rspamd/rspamd-build-docker:debian-${DEBIAN_RELEASE} AS build
 
 RUN mkdir /build /deb && chown nobody:nogroup /build /deb \
 	&& apt-get update \
