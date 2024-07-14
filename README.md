@@ -1,5 +1,9 @@
 # Rspamd Docker image 📨 🐋
 
+[![GHA](https://github.com/rspamd/rspamd-docker/actions/workflows/release.yml/badge.svg)](https://github.com/rspamd/rspamd-docker/actions/workflows/release.yml)
+[![GHA](https://github.com/rspamd/rspamd-docker/actions/workflows/security.yml/badge.svg)](https://github.com/rspamd/rspamd-docker/actions/workflows/security.yml)
+[![GHA](https://github.com/rspamd/rspamd-docker/actions/workflows/nightly.yml/badge.svg)](https://github.com/rspamd/rspamd-docker/actions/workflows/nightly.yml)
+
 ## Basic usage
 
 ~~~
@@ -19,10 +23,10 @@ Version numbers below are for illustration only & may not reflect latest release
 | tag | description |
 |-----|-------------|
 | latest | latest stable release |
-| 3.8 | latest stable release in 3.8 series |
-| 3.8.0 | latest build of version 3.8.0 |
+| 3.9 | latest stable release in 3.9 series |
+| 3.9.0 | latest build of version 3.9.0 |
 | nightly | unstable rolling release, built nightly |
-| asan-latest, asan-3.8, asan-3.8.0, asan-nightly | ASAN variants of images |
+| asan-latest, asan-3.9, asan-3.9.0, asan-nightly | ASAN variants of images |
 
 ## Container orchestration
 

@@ -1,0 +1,17 @@
+name: security
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  security_check:
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Run grype
+        uses: anchore/scan-action@v4
+        with:
+          image: rspamd/rspamd:latest
+          only-fixed: true
+          severity-cutoff: low
