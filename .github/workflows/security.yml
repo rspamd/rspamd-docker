@@ -7,7 +7,7 @@ on:
 
 jobs:
   security_check:
-    runs-on: "ubuntu-latest"
+    runs-on: "ubuntu-22.04"
     steps:
       - name: Run grype
         uses: anchore/scan-action@v4

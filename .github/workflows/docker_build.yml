@@ -28,7 +28,7 @@ jobs:
       dockerhub_tags_asan: ${{ steps.save_output.outputs.dockerhub_tags_asan }}
       dockerhub_tags_release: ${{ steps.save_output.outputs.dockerhub_tags_release }}
       tag: ${{ steps.save_output.outputs.tag }}
-    runs-on: ["ubuntu-latest"]
+    runs-on: ["ubuntu-22.04"]
     permissions:
       packages: write
       contents: read
