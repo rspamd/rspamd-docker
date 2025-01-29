@@ -14,7 +14,7 @@ docker run -v rspamd_dbdir:/var/lib/rspamd -v rspamd_confdir:/etc/rspamd -ti rsp
 
 In this build upstream config files are installed in `/usr/share/rspamd/config` allowing `/etc/rspamd` to contain only local configuration.
 
-Volumes or bind mounts should be used for the `/var/lib/rspamd` directory and optionally for `/etc/rspamd`. If bind mounts are used, the `/var/lib/rspamd` directory should be writable by `11333:11333` on the host machine.
+Volumes or bind mounts should be used for the `/var/lib/rspamd` directory and optionally for `/etc/rspamd`. If bind mounts are used, the `/var/lib/rspamd` directory should be writable by `11333:11333` on the host machine (or whichever uid:gid you may have explicitly started the container with, e.g. using `docker run -u`).
 
 ## Tags
 
@@ -23,10 +23,10 @@ Version numbers below are for illustration only & may not reflect latest release
 | tag | description |
 |-----|-------------|
 | latest | latest stable release |
-| 3.9 | latest stable release in 3.9 series |
-| 3.9.0 | latest build of version 3.9.0 |
+| 3.10 | latest stable release in 3.10 series |
+| 3.10.1 | latest build of version 3.10.1 |
 | nightly | unstable rolling release, built nightly |
-| asan-latest, asan-3.9, asan-3.9.0, asan-nightly | ASAN variants of images |
+| asan-latest, asan-3.10, asan-3.10.0, asan-nightly | ASAN variants of images |
 
 ## Container orchestration
 
