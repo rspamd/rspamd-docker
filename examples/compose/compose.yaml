@@ -28,6 +28,8 @@ services:
     container_name: rspamd-compose-redis
     command: "redis-server --save 60 1 --loglevel warning"
     image: "redis:latest"
+    sysctls:
+      - net.core.somaxconn=4096
     networks:
       - rspamd
     volumes:
