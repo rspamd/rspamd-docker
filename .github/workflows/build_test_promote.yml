@@ -1,0 +1,101 @@
+name: build_test_promote
+
+on:
+  workflow_call:
+    inputs:
+      dockerhub_name:
+        default: rspamd/rspamd
+        required: false
+        type: string
+      nightly:
+        default: true
+        required: false
+        type: boolean
+
+jobs:
+  build_amd64:
+    uses: ./.github/workflows/docker_build.yml
+    with:
+      nightly: ${{ inputs.nightly }}
+      platform: amd64
+    permissions:
+      packages: write
+      contents: read
+    secrets: inherit
+
+  build_arm64:
+    uses: ./.github/workflows/docker_build.yml
+    with:
+      nightly: ${{ inputs.nightly }}
+      platform: arm64
+    permissions:
+      packages: write
+      contents: read
+    secrets: inherit
+
+  test_amd64:
+    needs: [build_amd64]
+    uses: ./.github/workflows/rspamd_test.yml
+    with:
+      image: ghcr.io/${{ github.repository }}@${{ needs.build_amd64.outputs.digest_release }}
+      tag: "${{ needs.build_amd64.outputs.tag }}"
+
+  test_arm64:
+    needs: [build_arm64]
+    uses: ./.github/workflows/rspamd_test.yml
+    with:
+      image: ghcr.io/${{ github.repository }}@${{ needs.build_arm64.outputs.digest_release }}
+      tag: "${{ needs.build_arm64.outputs.tag }}"
+      platform: arm64
+
+  get_tags:
+    outputs:
+      dockerhub_tags_asan: ${{ steps.save_output.outputs.dockerhub_tags_asan }}
+      dockerhub_tags_release: ${{ steps.save_output.outputs.dockerhub_tags_release }}
+      ghcr_tags_asan: ${{ steps.save_output.outputs.ghcr_tags_asan }}
+      ghcr_tags_release: ${{ steps.save_output.outputs.ghcr_tags_release }}
+    runs-on: "ubuntu-22.04"
+    steps:
+      - name: Set nightly-specific variables
+        if: ${{ inputs.nightly }}
+        run: |
+          echo "IMG_TAGS_GHCR_ASAN=ghcr.io/${{ github.repository }}:asan-nightly" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_GHCR_RELEASE=ghcr.io/${{ github.repository }}:nightly" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_DOCKERHUB_ASAN=${{ inputs.dockerhub_name }}:asan-nightly" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_DOCKERHUB_RELEASE=${{ inputs.dockerhub_name }}:nightly" >> "$GITHUB_ENV"
+
+      - name: Set release-specific variables
+        if: ${{ ! inputs.nightly }}
+        run: |
+          export VERSION_BUILD=`echo ${{ github.ref_name }} | sed s/^v// | sed 's/\+/-/'`
+          echo "VERSION_BUILD=${VERSION_BUILD}" >> "$GITHUB_ENV"
+          export VERSION_FULL=`echo ${{ github.ref_name }} | sed s/^v// | sed 's/\+.*//'`
+          echo "VERSION_FULL=${VERSION_FULL}" >> "$GITHUB_ENV"
+          export VERSION_MAJOR_MINOR=${VERSION_FULL%.*}
+          echo "VERSION_MAJOR_MINOR=${VERSION_MAJOR_MINOR}" >> "$GITHUB_ENV"
+          export VERSION_MAJOR=`echo ${{ github.ref_name }} | sed s/^v// | sed 's/[^0-9].*//'`
+          echo "VERSION_MAJOR=${VERSION_MAJOR}" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_DOCKERHUB_ASAN=${{ inputs.dockerhub_name }}:asan-latest,${{ inputs.dockerhub_name }}:asan-${VERSION_BUILD},${{ inputs.dockerhub_name }}:asan-${VERSION_FULL},${{ inputs.dockerhub_name }}:asan-${VERSION_MAJOR_MINOR},${{ inputs.dockerhub_name }}:asan-${VERSION_MAJOR}" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_GHCR_ASAN=ghcr.io/${{ github.repository }}:asan-latest,ghcr.io/${{ github.repository }}:asan-${VERSION_BUILD},ghcr.io/${{ github.repository }}:asan-${VERSION_FULL},ghcr.io/${{ github.repository }}:asan-${VERSION_MAJOR_MINOR},ghcr.io/${{ github.repository }}:asan-${VERSION_MAJOR}" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_DOCKERHUB_RELEASE=${{ inputs.dockerhub_name }}:latest,${{ inputs.dockerhub_name }}:${VERSION_BUILD},${{ inputs.dockerhub_name }}:${VERSION_FULL},${{ inputs.dockerhub_name }}:${VERSION_MAJOR_MINOR},${{ inputs.dockerhub_name }}:${VERSION_MAJOR}" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_GHCR_RELEASE=ghcr.io/${{ github.repository }}:latest,ghcr.io/${{ github.repository }}:${VERSION_BUILD},ghcr.io/${{ github.repository }}:${VERSION_FULL},ghcr.io/${{ github.repository }}:${VERSION_MAJOR_MINOR},ghcr.io/${{ github.repository }}:${VERSION_MAJOR}" >> "$GITHUB_ENV"
+
+      - name: Save output
+        id: save_output
+        run: |
+          echo "dockerhub_tags_asan=${{ env.IMG_TAGS_DOCKERHUB_ASAN }}" >> $GITHUB_OUTPUT
+          echo "dockerhub_tags_release=${{ env.IMG_TAGS_DOCKERHUB_RELEASE }}" >> $GITHUB_OUTPUT
+          echo "ghcr_tags_asan=${{ env.IMG_TAGS_GHCR_ASAN }}" >> $GITHUB_OUTPUT
+          echo "ghcr_tags_release=${{ env.IMG_TAGS_GHCR_RELEASE }}" >> $GITHUB_OUTPUT
+
+  promote:
+    needs: [build_amd64, build_arm64, get_tags, test_amd64, test_arm64]
+    uses: ./.github/workflows/promote.yml
+    with:
+      images: ghcr.io/${{ github.repository }}@${{ needs.build_amd64.outputs.digest_release }},ghcr.io/${{ github.repository }}@${{ needs.build_arm64.outputs.digest_release }}
+      images_asan: ghcr.io/${{ github.repository }}@${{ needs.build_amd64.outputs.digest_asan }},ghcr.io/${{ github.repository }}@${{ needs.build_arm64.outputs.digest_asan }}
+      dockerhub_tags_asan: "${{ needs.get_tags.outputs.dockerhub_tags_asan }}"
+      dockerhub_tags_release: "${{ needs.get_tags.outputs.dockerhub_tags_release }}"
+      ghcr_tags_asan: "${{ needs.get_tags.outputs.ghcr_tags_asan }}"
+      ghcr_tags_release: "${{ needs.get_tags.outputs.ghcr_tags_release }}"
+    secrets: inherit
