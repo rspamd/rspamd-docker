@@ -3,6 +3,9 @@ name: rspamd_test
 on:
   workflow_call:
     inputs:
+      platform:
+        default: amd64
+        type: string
       image:
         required: true
         type: string
@@ -12,7 +15,7 @@ on:
 
 jobs:
   rspamd_test:
-    runs-on: "ubuntu-22.04"
+    runs-on: "${{ (inputs.platform == 'arm64') && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}"
     container:
       image: ${{ inputs.image }}
       options: --user root
