@@ -14,6 +14,7 @@ ENV ASAN_TAG=$ASAN_TAG
 
 RUN	--mount=type=cache,from=pkg,source=/deb,target=/deb \
 	apt-get update \
+    && apt-get upgrade -y libxml2
 	&& apt-get install -y `bash -c "dpkg -I /deb/rspamd${ASAN_TAG}_*_*.deb | grep '^ Depends:' | perl -p -e 's#Depends: |,|\||\([^)]*\)##g'"` \
 	&& apt-get -q clean \
 	&& rm -rf /var/cache/ldconfig/aux-cache /var/lib/apt/lists/* /var/log/apt/*.log /var/log/dpkg.log \
