@@ -6,12 +6,54 @@ on:
   workflow_dispatch:
 
 jobs:
-  security_check:
+  autosecurity:
     runs-on: "ubuntu-22.04"
     steps:
-      - name: Run grype
-        uses: anchore/scan-action@v4
-        with:
-          image: rspamd/rspamd:latest
-          only-fixed: true
-          severity-cutoff: low
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Download grype
+        uses: anchore/scan-action/download-grype@v4
+        id: grype
+
+      - name: Check image
+        run: |
+          ${{steps.grype.outputs.cmd}} --only-fixed -o json --file report_release.json ghcr.io/${{ github.repository }}
+          echo RELEASE_VULN_COUNT=`jq '(.matches | length)' report_release.json` >> "$GITHUB_ENV"
+
+      - name: Check base image
+        if: ${{ env.RELEASE_VULN_COUNT != 0 }}
+        run: |
+          ${{steps.grype.outputs.cmd}} --only-fixed -o json --file report_base.json debian:bookworm-slim
+          echo BASE_VULN_COUNT=`jq '(.matches | length)' report_base.json` >> "$GITHUB_ENV"
+
+      - name: Push new tag if base image checked clean
+        if: ${{ env.RELEASE_VULN_COUNT != 0 && env.BASE_VULN_COUNT == 0 }}
+        uses: ./.github/actions/bump_tag
+        permissions:
+          actions: write
+          contents: write
+
+      - name: Check if base image is relatively better
+        if: ${{ env.RELEASE_VULN_COUNT != 0 && env.BASE_VULN_COUNT != 0 }}
+        run: |
+          jq '.matches.[].vulnerability.id' report_release.json | sort | uniq > release_vulns.txt
+          jq '.matches.[].vulnerability.id' report_base.json | sort | uniq > base_vulns.txt
+          NEWVULNS=$(comm -13 base_vulns.txt release_vulns.txt | wc -l)
+          if [ "$NEWVULNS" -gt 0 ]; then
+            echo "New base image has $NEWVULNS novel vulnerabilties? Weird... :("
+          fi
+          FIXEDVULNS=$(comm -23 release_vulns.txt base_vulns.txt | wc -l)
+          if [ "$FIXEDVULNS" -gt 0 ]; then
+            echo "Found $FIXEDVULNS vulnerabilities fixed in new base image. Bumping tag."
+            echo "BUMP_TAG=1" >> "$GITHUB_ENV"
+          else
+            echo "Base image not fixed yet? OK... :("
+          fi
+
+      - name: Push new tag if base image is better
+        if: ${{ env.BUMP_TAG == 1 }}
+        uses: ./.github/actions/bump_tag
+        permissions:
+          actions: write
+          contents: write
