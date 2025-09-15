@@ -7,6 +7,9 @@ on:
 
 jobs:
   autosecurity:
+    permissions:
+      actions: write
+      contents: write
     runs-on: "ubuntu-22.04"
     steps:
       - name: Check out source code
@@ -21,39 +24,51 @@ jobs:
           ${{steps.grype.outputs.cmd}} --only-fixed -o json --file report_release.json ghcr.io/${{ github.repository }}
           echo RELEASE_VULN_COUNT=`jq '(.matches | length)' report_release.json` >> "$GITHUB_ENV"
 
-      - name: Check base image
+      - name: Get old package tag
         if: ${{ env.RELEASE_VULN_COUNT != 0 }}
         run: |
-          ${{steps.grype.outputs.cmd}} --only-fixed -o json --file report_base.json debian:bookworm-slim
-          echo BASE_VULN_COUNT=`jq '(.matches | length)' report_base.json` >> "$GITHUB_ENV"
+          OLD_PKG_TAG=`docker inspect ghcr.io/${{ github.repository }} | jq -r '.[0].Config.Labels."com.rspamd.pkg-tag"'`
+          echo "OLD_PKG_TAG=$OLD_PKG_TAG" >> "$GITHUB_ENV"
 
-      - name: Push new tag if base image checked clean
-        if: ${{ env.RELEASE_VULN_COUNT != 0 && env.BASE_VULN_COUNT == 0 }}
+      - name: Build test image
+        if: ${{ env.RELEASE_VULN_COUNT != 0 }}
+        id: build_test
+        uses: docker/build-push-action@v5
+        with:
+          build-args: |
+            PKG_IMG=ghcr.io/${{ github.repository }}
+            PKG_TAG=${{ env.OLD_PKG_TAG }}
+          file: Dockerfile
+          push: false
+          tags: ""
+
+      - name: Check test image
+        if: ${{ env.RELEASE_VULN_COUNT != 0 }}
+        run: |
+          ${{steps.grype.outputs.cmd}} --only-fixed -o json --file report_test.json ${{ steps.build_test.outputs.digest }}
+          echo TEST_VULN_COUNT=`jq '(.matches | length)' report_test.json` >> "$GITHUB_ENV"
+
+      - name: Push new tag if test image checked clean
+        if: ${{ env.RELEASE_VULN_COUNT != 0 && env.test_VULN_COUNT == 0 }}
         uses: ./.github/actions/bump_tag
-        permissions:
-          actions: write
-          contents: write
 
-      - name: Check if base image is relatively better
-        if: ${{ env.RELEASE_VULN_COUNT != 0 && env.BASE_VULN_COUNT != 0 }}
+      - name: Check if test image is relatively better
+        if: ${{ env.RELEASE_VULN_COUNT != 0 && env.test_VULN_COUNT != 0 }}
         run: |
           jq '.matches.[].vulnerability.id' report_release.json | sort | uniq > release_vulns.txt
-          jq '.matches.[].vulnerability.id' report_base.json | sort | uniq > base_vulns.txt
-          NEWVULNS=$(comm -13 base_vulns.txt release_vulns.txt | wc -l)
+          jq '.matches.[].vulnerability.id' report_test.json | sort | uniq > test_vulns.txt
+          NEWVULNS=$(comm -13 test_vulns.txt release_vulns.txt | wc -l)
           if [ "$NEWVULNS" -gt 0 ]; then
-            echo "New base image has $NEWVULNS novel vulnerabilties? Weird... :("
+            echo "New test image has $NEWVULNS novel vulnerabilties? Weird... :("
           fi
-          FIXEDVULNS=$(comm -23 release_vulns.txt base_vulns.txt | wc -l)
+          FIXEDVULNS=$(comm -23 release_vulns.txt test_vulns.txt | wc -l)
           if [ "$FIXEDVULNS" -gt 0 ]; then
-            echo "Found $FIXEDVULNS vulnerabilities fixed in new base image. Bumping tag."
+            echo "Found $FIXEDVULNS vulnerabilities fixed in new test image. Bumping tag."
             echo "BUMP_TAG=1" >> "$GITHUB_ENV"
           else
-            echo "Base image not fixed yet? OK... :("
+            echo "test image not fixed yet? OK... :("
           fi
 
-      - name: Push new tag if base image is better
+      - name: Push new tag if test image is better
         if: ${{ env.BUMP_TAG == 1 }}
         uses: ./.github/actions/bump_tag
-        permissions:
-          actions: write
-          contents: write
