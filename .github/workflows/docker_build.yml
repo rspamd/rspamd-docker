@@ -89,6 +89,8 @@ jobs:
           build-args: |
             PKG_IMG=ghcr.io/${{ github.repository }}
             PKG_TAG=pkg${{ env.PKG_TAG_SUFFIX }}
+          labels: |
+            com.rspamd.pkg-tag=pkg${{ env.PKG_TAG_SUFFIX }}
           file: Dockerfile
           push: true
           tags: ""
