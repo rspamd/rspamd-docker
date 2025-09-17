@@ -25,7 +25,8 @@ RUN	git clone -b ${RSPAMD_GIT} https://github.com/rspamd/rspamd.git \
 	&& bash -c "if [ ${RSPAMD_VERSION} == 'auto' ]; then sed -i s/\(.*\)/\($((16#`git log -n1 --pretty='%h'`))\)/ debian/changelog; else sed -i s/\(.*\)/\(${RSPAMD_VERSION}\)/ debian/changelog; fi" \
 	&& sed -i s/quilt/native/ debian/source/format \
 	&& debuild -us -uc \
-	&& mv /build/*.deb /deb/
+	&& mv /build/*.deb /deb/ \
+	&& touch -h -d '2000-01-01 00:00:00' /deb/ /deb/*
 
 FROM scratch AS pkg
 COPY --from=build /deb /deb
