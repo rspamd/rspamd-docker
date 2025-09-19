@@ -9,16 +9,25 @@ on:
       dockerhub_tags_release:
         required: true
         type: string
+      dockerhub_tags_package:
+        required: true
+        type: string
       ghcr_tags_asan:
         required: true
         type: string
       ghcr_tags_release:
         required: true
         type: string
+      ghcr_tags_package:
+        required: true
+        type: string
       images:
         required: true
         type: string
       images_asan:
+        required: true
+        type: string
+      images_package:
         required: true
         type: string
 
@@ -48,6 +57,17 @@ jobs:
         run: |
           IFS=, read -a tags <<< "${{ inputs.ghcr_tags_asan }}"
           IMAGES="${{ inputs.images_asan }}"
+          IMAGES="${IMAGES//,/ }"
+          for tag in ${tags[@]}
+          do
+            TAGLIST+=" -t ${tag} "
+          done
+          docker buildx imagetools create ${TAGLIST} ${IMAGES}
+
+      - name: Push package image to GHCR
+        run: |
+          IFS=, read -a tags <<< "${{ inputs.ghcr_tags_package }}"
+          IMAGES="${{ inputs.images_package }}"
           IMAGES="${IMAGES//,/ }"
           for tag in ${tags[@]}
           do
@@ -85,6 +105,18 @@ jobs:
         run: |
           IFS=, read -a tags <<< "${{ inputs.dockerhub_tags_asan }}"
           IMAGES="${{ inputs.images_asan }}"
+          IMAGES="${IMAGES//,/ }"
+          for tag in ${tags[@]}
+          do
+            TAGLIST+=" -t ${tag} "
+          done
+          docker buildx imagetools create ${TAGLIST} ${IMAGES}
+
+      - name: Push package image to Dockerhub
+        if: ${{ env.HAVE_DOCKERHUB }}
+        run: |
+          IFS=, read -a tags <<< "${{ inputs.dockerhub_tags_package }}"
+          IMAGES="${{ inputs.images_package }}"
           IMAGES="${IMAGES//,/ }"
           for tag in ${tags[@]}
           do
