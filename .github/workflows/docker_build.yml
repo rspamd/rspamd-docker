@@ -17,6 +17,9 @@ on:
       digest_release:
         description: "Digest of the release image"
         value: ${{ jobs.docker_build.outputs.digest_release }}
+      digest_package:
+        description: "Digest of the package image"
+        value: ${{ jobs.docker_build.outputs.digest_package }}
       tag:
         description: "Tag in rspamd repo to check out for tests"
         value: ${{ jobs.docker_build.outputs.tag }}
@@ -26,6 +29,7 @@ jobs:
     outputs:
       digest_asan: "${{ steps.build_asan.outputs.digest }}"
       digest_release: "${{ steps.build_release.outputs.digest }}"
+      digest_package: "${{ steps.build_pkg.outputs.digest }}"
       tag: ${{ steps.save_output.outputs.tag }}
     runs-on: "${{ (inputs.platform == 'arm64') && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}"
     permissions:
@@ -73,6 +77,7 @@ jobs:
           echo "tag=${{ env.RSPAMD_GIT }}" >> $GITHUB_OUTPUT
 
       - name: Build pkg image
+        id: build_pkg
         uses: docker/build-push-action@v5
         with:
           build-args: |
@@ -104,6 +109,8 @@ jobs:
             ASAN_TAG=-asan
             PKG_IMG=ghcr.io/${{ github.repository }}
             PKG_TAG=pkg${{ env.PKG_TAG_SUFFIX }}
+          labels: |
+            com.rspamd.pkg-tag=pkg${{ env.PKG_TAG_SUFFIX }}
           file: Dockerfile
           push: true
           tags: ""
