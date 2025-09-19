@@ -22,16 +22,18 @@ jobs:
       - name: Check image
         run: |
           ${{steps.grype.outputs.cmd}} --only-fixed -o json --file report_release.json ghcr.io/${{ github.repository }}
-          echo RELEASE_VULN_COUNT=`jq '(.matches | length)' report_release.json` >> "$GITHUB_ENV"
+          RELEASE_VULN_COUNT=`jq '(.matches | length)' report_release.json`
+          echo Counted $RELEASE_VULN_COUNT vulnerabilities in release image.
+          echo RELEASE_VULN_COUNT=$RELEASE_VULN_COUNT >> "$GITHUB_ENV"
 
       - name: Get old package tag
-        if: ${{ env.RELEASE_VULN_COUNT != 0 }}
+        if: ${{ env.RELEASE_VULN_COUNT != '0' }}
         run: |
           OLD_PKG_TAG=`docker inspect ghcr.io/${{ github.repository }} | jq -r '.[0].Config.Labels."com.rspamd.pkg-tag"'`
           echo "OLD_PKG_TAG=$OLD_PKG_TAG" >> "$GITHUB_ENV"
 
       - name: Build test image
-        if: ${{ env.RELEASE_VULN_COUNT != 0 }}
+        if: ${{ env.RELEASE_VULN_COUNT != '0' }}
         id: build_test
         uses: docker/build-push-action@v5
         with:
@@ -43,17 +45,19 @@ jobs:
           tags: ""
 
       - name: Check test image
-        if: ${{ env.RELEASE_VULN_COUNT != 0 }}
+        if: ${{ env.RELEASE_VULN_COUNT != '0' }}
         run: |
           ${{steps.grype.outputs.cmd}} --only-fixed -o json --file report_test.json ${{ steps.build_test.outputs.digest }}
-          echo TEST_VULN_COUNT=`jq '(.matches | length)' report_test.json` >> "$GITHUB_ENV"
+          TEST_VULN_COUNT=`jq '(.matches | length)' report_test.json`
+          echo Counted $TEST_VULN_COUNT vulnerabilities in test image.
+          echo TEST_VULN_COUNT=$TEST_VULN_COUNT >> "$GITHUB_ENV"
 
       - name: Push new tag if test image checked clean
-        if: ${{ env.RELEASE_VULN_COUNT != 0 && env.test_VULN_COUNT == 0 }}
+        if: ${{ env.RELEASE_VULN_COUNT != '0' && env.TEST_VULN_COUNT == '0' }}
         uses: ./.github/actions/bump_tag
 
       - name: Check if test image is relatively better
-        if: ${{ env.RELEASE_VULN_COUNT != 0 && env.test_VULN_COUNT != 0 }}
+        if: ${{ env.RELEASE_VULN_COUNT != '0' && env.TEST_VULN_COUNT != '0' }}
         run: |
           jq '.matches.[].vulnerability.id' report_release.json | sort | uniq > release_vulns.txt
           jq '.matches.[].vulnerability.id' report_test.json | sort | uniq > test_vulns.txt
@@ -70,5 +74,5 @@ jobs:
           fi
 
       - name: Push new tag if test image is better
-        if: ${{ env.BUMP_TAG == 1 }}
+        if: ${{ env.BUMP_TAG == '1' }}
         uses: ./.github/actions/bump_tag
