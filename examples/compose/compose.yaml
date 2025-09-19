@@ -8,12 +8,10 @@ services:
       - unbound
       - redis
     environment:
-      - RSPAMD_DNS_SERVERS=round-robin:192.0.2.254:53
+      - RSPAMD_DNS_SERVERS=round-robin:rspamd-compose-unbound:53
       - RSPAMD_REDIS_SERVERS=rspamd-compose-redis
       - RSPAMD_USE_BAYES=1
 #      - RSPAMD_USE_GREYLIST=1
-    networks:
-      - rspamd
     ports:
       - "127.0.0.1:11332:11332"
       - "127.0.0.1:11333:11333"
@@ -30,8 +28,6 @@ services:
     image: "redis:latest"
     sysctls:
       - net.core.somaxconn=4096
-    networks:
-      - rspamd
     volumes:
       - rspamd-compose-redis-data:/data
 
@@ -40,18 +36,7 @@ services:
       context: "."
       dockerfile: "Dockerfile.unbound"
     container_name: rspamd-compose-unbound
-    networks:
-      rspamd:
-        ipv4_address: 192.0.2.254
     pull_policy: build
-
-
-networks:
-  rspamd:
-    ipam:
-      config:
-        - subnet: 192.0.2.0/24
-
 
 volumes:
   rspamd-compose-redis-data:
