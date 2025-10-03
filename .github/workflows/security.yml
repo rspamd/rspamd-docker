@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Check out source code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download grype
         uses: anchore/scan-action/download-grype@v4
