@@ -54,6 +54,8 @@ jobs:
       dockerhub_tags_release: ${{ steps.save_output.outputs.dockerhub_tags_release }}
       ghcr_tags_asan: ${{ steps.save_output.outputs.ghcr_tags_asan }}
       ghcr_tags_release: ${{ steps.save_output.outputs.ghcr_tags_release }}
+      ghcr_tags_package: ${{ steps.save_output.outputs.ghcr_tags_package }}
+      dockerhub_tags_package: ${{ steps.save_output.outputs.dockerhub_tags_package }}
     runs-on: "ubuntu-22.04"
     steps:
       - name: Set nightly-specific variables
@@ -61,8 +63,10 @@ jobs:
         run: |
           echo "IMG_TAGS_GHCR_ASAN=ghcr.io/${{ github.repository }}:asan-nightly" >> "$GITHUB_ENV"
           echo "IMG_TAGS_GHCR_RELEASE=ghcr.io/${{ github.repository }}:nightly" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_GHCR_PKG=ghcr.io/${{ github.repository }}:pkg-nightly" >> "$GITHUB_ENV"
           echo "IMG_TAGS_DOCKERHUB_ASAN=${{ inputs.dockerhub_name }}:asan-nightly" >> "$GITHUB_ENV"
           echo "IMG_TAGS_DOCKERHUB_RELEASE=${{ inputs.dockerhub_name }}:nightly" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_DOCKERHUB_PKG=${{ inputs.dockerhub_name }}:pkg-nightly" >> "$GITHUB_ENV"
 
       - name: Set release-specific variables
         if: ${{ ! inputs.nightly }}
@@ -79,6 +83,8 @@ jobs:
           echo "IMG_TAGS_GHCR_ASAN=ghcr.io/${{ github.repository }}:asan-latest,ghcr.io/${{ github.repository }}:asan-${VERSION_BUILD},ghcr.io/${{ github.repository }}:asan-${VERSION_FULL},ghcr.io/${{ github.repository }}:asan-${VERSION_MAJOR_MINOR},ghcr.io/${{ github.repository }}:asan-${VERSION_MAJOR}" >> "$GITHUB_ENV"
           echo "IMG_TAGS_DOCKERHUB_RELEASE=${{ inputs.dockerhub_name }}:latest,${{ inputs.dockerhub_name }}:${VERSION_BUILD},${{ inputs.dockerhub_name }}:${VERSION_FULL},${{ inputs.dockerhub_name }}:${VERSION_MAJOR_MINOR},${{ inputs.dockerhub_name }}:${VERSION_MAJOR}" >> "$GITHUB_ENV"
           echo "IMG_TAGS_GHCR_RELEASE=ghcr.io/${{ github.repository }}:latest,ghcr.io/${{ github.repository }}:${VERSION_BUILD},ghcr.io/${{ github.repository }}:${VERSION_FULL},ghcr.io/${{ github.repository }}:${VERSION_MAJOR_MINOR},ghcr.io/${{ github.repository }}:${VERSION_MAJOR}" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_DOCKERHUB_PKG=${{ inputs.dockerhub_name }}:pkg-latest" >> "$GITHUB_ENV"
+          echo "IMG_TAGS_GHCR_PKG=ghcr.io/${{ github.repository }}:pkg-latest" >> "$GITHUB_ENV"
 
       - name: Save output
         id: save_output
@@ -87,6 +93,8 @@ jobs:
           echo "dockerhub_tags_release=${{ env.IMG_TAGS_DOCKERHUB_RELEASE }}" >> $GITHUB_OUTPUT
           echo "ghcr_tags_asan=${{ env.IMG_TAGS_GHCR_ASAN }}" >> $GITHUB_OUTPUT
           echo "ghcr_tags_release=${{ env.IMG_TAGS_GHCR_RELEASE }}" >> $GITHUB_OUTPUT
+          echo "ghcr_tags_package=${{ env.IMG_TAGS_GHCR_PKG }}" >> $GITHUB_OUTPUT
+          echo "dockerhub_tags_package=${{ env.IMG_TAGS_DOCKERHUB_PKG }}" >> $GITHUB_OUTPUT
 
   promote:
     needs: [build_amd64, build_arm64, get_tags, test_amd64, test_arm64]
@@ -94,8 +102,11 @@ jobs:
     with:
       images: ghcr.io/${{ github.repository }}@${{ needs.build_amd64.outputs.digest_release }},ghcr.io/${{ github.repository }}@${{ needs.build_arm64.outputs.digest_release }}
       images_asan: ghcr.io/${{ github.repository }}@${{ needs.build_amd64.outputs.digest_asan }},ghcr.io/${{ github.repository }}@${{ needs.build_arm64.outputs.digest_asan }}
+      images_package: ghcr.io/${{ github.repository }}@${{ needs.build_amd64.outputs.digest_package }},ghcr.io/${{ github.repository }}@${{ needs.build_arm64.outputs.digest_package }}
       dockerhub_tags_asan: "${{ needs.get_tags.outputs.dockerhub_tags_asan }}"
       dockerhub_tags_release: "${{ needs.get_tags.outputs.dockerhub_tags_release }}"
       ghcr_tags_asan: "${{ needs.get_tags.outputs.ghcr_tags_asan }}"
       ghcr_tags_release: "${{ needs.get_tags.outputs.ghcr_tags_release }}"
+      ghcr_tags_package: "${{ needs.get_tags.outputs.ghcr_tags_package }}"
+      dockerhub_tags_package: "${{ needs.get_tags.outputs.dockerhub_tags_package }}"
     secrets: inherit

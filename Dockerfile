@@ -1,6 +1,6 @@
 ARG DEBIAN_RELEASE=bookworm
 ARG PKG_IMG=ghcr.io/rspamd/rspamd-docker
-ARG PKG_TAG
+ARG PKG_TAG=pkg-latest
 
 FROM ${PKG_IMG}:${PKG_TAG} AS pkg
 
