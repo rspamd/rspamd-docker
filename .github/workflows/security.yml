@@ -63,9 +63,9 @@ jobs:
         run: |
           jq '.matches.[].vulnerability.id' report_release.json | sort | uniq > release_vulns.txt
           jq '.matches.[].vulnerability.id' report_test.json | sort | uniq > test_vulns.txt
-          NEWVULNS=$(comm -13 test_vulns.txt release_vulns.txt | wc -l)
+          NEWVULNS=$(comm -23 test_vulns.txt release_vulns.txt | wc -l)
           if [ "$NEWVULNS" -gt 0 ]; then
-            echo "New test image has $NEWVULNS novel vulnerabilties? Weird... :("
+            echo "New test image has $NEWVULNS novel vulnerabilities? Weird... :("
           fi
           FIXEDVULNS=$(comm -23 release_vulns.txt test_vulns.txt | wc -l)
           if [ "$FIXEDVULNS" -gt 0 ]; then
