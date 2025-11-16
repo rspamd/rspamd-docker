@@ -1,7 +1,7 @@
 services:
   rspamd:
     image: rspamd/rspamd:latest
-    dns: 192.0.2.254
+    dns: ${UNBOUND_IP:-192.0.2.254}
     depends_on:
       - unbound
       - redis
@@ -25,16 +25,28 @@ services:
     image: alpinelinux/unbound:latest
     networks:
       default:
-        ipv4_address: 192.0.2.254
-    volumes:
-      - ./config/unbound:/etc/unbound
+        ipv4_address: ${UNBOUND_IP:-192.0.2.254}
+    # Alternatively use a volume mount for this config if you don't want to
+    # leverage the config flexibility of ENV `UNBOUND_IP` + `UNBOUND_SUBNET`
+    configs:
+      - source: unbound-config
+        target: /etc/unbound/unbound.conf
+
+configs:
+  unbound-config:
+    content: |
+       server:
+         access-control: ${UNBOUND_SUBNET:-192.0.2.0/24} allow
+         do-ip6: no
+         interface: 0.0.0.0
+         logfile: ""
 
 networks:
   default:
     name: unbound-network
     ipam:
       config:
-        - subnet: 192.0.2.0/24
+        - subnet: ${UNBOUND_SUBNET:-192.0.2.0/24}
 
 volumes:
   redis-data:
