@@ -1,58 +1,41 @@
 services:
   rspamd:
-    build:
-      context: "."
-      dockerfile: "Dockerfile.rspamd"
-    container_name: rspamd-compose-rspamd
+    image: rspamd/rspamd:latest
+    dns: 192.0.2.254
     depends_on:
       - unbound
       - redis
     environment:
-      - RSPAMD_DNS_SERVERS=round-robin:192.0.2.254:53
-      - RSPAMD_REDIS_SERVERS=rspamd-compose-redis
+      - RSPAMD_REDIS_SERVERS=redis
       - RSPAMD_USE_BAYES=1
-#      - RSPAMD_USE_GREYLIST=1
-    networks:
-      - rspamd
-    ports:
-      - "127.0.0.1:11332:11332"
-      - "127.0.0.1:11333:11333"
-      - "127.0.0.1:11334:11334"
-    pull_policy: build
-# recommended for production
-#    read_only: true
+      #- RSPAMD_USE_GREYLIST=1
     volumes:
-      - rspamd-compose-rspamd-dbdir:/var/lib/rspamd
+      - rspamd-data:/var/lib/rspamd
+      - ./config/rspamd:/etc/rspamd
+    # Recommended for production:
+    #read_only: true
 
   redis:
-    container_name: rspamd-compose-redis
-    command: "redis-server --save 60 1 --loglevel warning"
-    image: "redis:latest"
-    sysctls:
-      - net.core.somaxconn=4096
-    networks:
-      - rspamd
+    image: redis:latest
+    command: redis-server --save 60 1 --loglevel warning
     volumes:
-      - rspamd-compose-redis-data:/data
+      - redis-data:/data
 
   unbound:
-    build:
-      context: "."
-      dockerfile: "Dockerfile.unbound"
-    container_name: rspamd-compose-unbound
+    image: alpinelinux/unbound:latest
     networks:
-      rspamd:
+      default:
         ipv4_address: 192.0.2.254
-    pull_policy: build
-
+    volumes:
+      - ./config/unbound:/etc/unbound
 
 networks:
-  rspamd:
+  default:
+    name: unbound-network
     ipam:
       config:
         - subnet: 192.0.2.0/24
 
-
 volumes:
-  rspamd-compose-redis-data:
-  rspamd-compose-rspamd-dbdir:
+  redis-data:
+  rspamd-data:
