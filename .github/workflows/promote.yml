@@ -35,6 +35,14 @@ jobs:
   promote:
     runs-on: "ubuntu-22.04"
     steps:
+      # Can be removed when there'd be 0.30.1+ on GH runners
+      - name: Upgrade buildx
+        run: |
+          docker buildx version
+          sudo apt-get update
+          sudo apt-get install -y moby-buildx
+          docker buildx version
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
