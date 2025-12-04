@@ -1,4 +1,4 @@
-ARG DEBIAN_RELEASE=bookworm
+ARG DEBIAN_RELEASE=trixie
 ARG PKG_IMG=ghcr.io/rspamd/rspamd-docker
 ARG PKG_TAG=pkg-latest
 
