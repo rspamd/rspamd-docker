@@ -29,6 +29,7 @@ RUN	git clone -b ${RSPAMD_GIT} https://github.com/rspamd/rspamd.git \
 	   else \
 	     sed -i "s/(.*)/(${RSPAMD_VERSION})/" debian/changelog; \
 	   fi \
+	&& sed -i "s/^EXTRA_ARGS :=.*/EXTRA_ARGS := -DGIT_ID=$(git rev-parse --short HEAD)/" debian/rules \
 	&& sed -i s/quilt/native/ debian/source/format \
 	&& debuild -us -uc \
 	&& mv /build/*.deb /deb/ \
