@@ -10,7 +10,7 @@ jobs:
     runs-on: "ubuntu-22.04"
     steps:
       - name: Run grype
-        uses: anchore/scan-action@v4
+        uses: anchore/scan-action@v7
         with:
           image: rspamd/rspamd:latest
           only-fixed: true
