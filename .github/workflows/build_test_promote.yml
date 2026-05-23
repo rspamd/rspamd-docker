@@ -99,6 +99,9 @@ jobs:
   promote:
     needs: [build_amd64, build_arm64, get_tags, test_amd64, test_arm64]
     uses: ./.github/workflows/promote.yml
+    permissions:
+      packages: write
+      contents: read
     with:
       images: ghcr.io/${{ github.repository }}@${{ needs.build_amd64.outputs.digest_release }},ghcr.io/${{ github.repository }}@${{ needs.build_arm64.outputs.digest_release }}
       images_asan: ghcr.io/${{ github.repository }}@${{ needs.build_amd64.outputs.digest_asan }},ghcr.io/${{ github.repository }}@${{ needs.build_arm64.outputs.digest_asan }}
