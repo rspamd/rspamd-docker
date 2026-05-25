@@ -28,8 +28,6 @@ RUN	--mount=type=cache,from=pkg,source=/deb,target=/deb --mount=type=cache,from=
 
 USER	11333:11333
 
-VOLUME  [ "/var/lib/rspamd" ]
-
 CMD     [ "/usr/bin/rspamd", "-f" ]
 
 # https://www.rspamd.com/doc/workers
