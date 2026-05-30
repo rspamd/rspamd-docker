@@ -16,6 +16,25 @@ In this build upstream config files are installed in `/usr/share/rspamd/config` 
 
 Volumes or bind mounts should be used for the `/var/lib/rspamd` directory and optionally for `/etc/rspamd`. If bind mounts are used, the `/var/lib/rspamd` directory should be writable by `11333:11333` on the host machine.
 
+### Environment variables
+
+The baseline config is templated with [jinja](https://rspamd.com/doc/configuration/ucl.html). Any environment variable prefixed with `RSPAMD_` is exposed to those templates with the prefix stripped (e.g. `RSPAMD_LOCAL_ADDR` → `env.LOCAL_ADDR`). The image relies on the following knobs:
+
+| variable | default in image | description |
+|----------|------------------|-------------|
+| `RSPAMD_LOCAL_ADDR` | `*` | Address all workers bind to. Set in the image so the container is reachable; override to e.g. `127.0.0.1` to restrict. |
+| `RSPAMD_LOG_TYPE` | `console` | Logging backend (`console`, `file`, `syslog`). Set in the image so logs go to the container's stdout. |
+| `RSPAMD_PORT_NORMAL` | `11333` | Normal (scan) worker port. |
+| `RSPAMD_PORT_CONTROLLER` | `11334` | Controller / web UI port. |
+| `RSPAMD_PORT_PROXY` | `11332` | Proxy (milter) worker port. |
+| `RSPAMD_PORT_FUZZY` | `11335` | Fuzzy storage worker port (worker disabled by default). |
+
+Your own `local.d`/`override.d` snippets can reference any other `RSPAMD_`-prefixed variable via `{= env.NAME =}` — see the [compose example](examples/compose) for `RSPAMD_DNS_SERVERS`, `RSPAMD_REDIS_SERVERS`, etc.
+
+### Security note
+
+The image binds every worker to all interfaces (`RSPAMD_LOCAL_ADDR=*`), including the controller (`11334`), which serves the web UI and admin API. Do not expose `11334` to untrusted networks without setting a controller `password`/`enable_password`, and prefer publishing host ports on a loopback address (e.g. `127.0.0.1:11334:11334`), as the [compose example](examples/compose/compose.yaml) does.
+
 ## Tags
 
 Version numbers below are for illustration only & may not reflect latest release, refer to [repo tags](https://github.com/rspamd/rspamd/tags) for actual latest Rspamd version (or use `latest` tag).

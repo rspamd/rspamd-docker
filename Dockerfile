@@ -20,15 +20,28 @@ RUN	--mount=type=cache,from=pkg,source=/deb,target=/deb \
 	&& bash -c "find / -mount -newer /proc/1 -not -path '/dev/**' -not -path '/proc/**' -not -path '/sys/**' | xargs touch -h -d '2000-01-01 00:00:00'"
 
 RUN	--mount=type=cache,from=pkg,source=/deb,target=/deb --mount=type=cache,from=lid,source=/,target=/lid \
-	dpkg -i /deb/rspamd${ASAN_TAG}_*_*.deb /deb/rspamd${ASAN_TAG}-dbg_*_*.deb \
+	addgroup --system --force-badname --gid 11333 _rspamd \
+	&& adduser --system --quiet --ingroup _rspamd --uid 11333 --home /var/lib/rspamd --no-create-home --disabled-login --gecos "rspamd spam filtering system" --force-badname _rspamd \
+	&& dpkg -i /deb/rspamd${ASAN_TAG}_*_*.deb /deb/rspamd${ASAN_TAG}-dbg_*_*.deb \
 	&& rm -rf /var/log/dpkg.log \
 	&& cp /lid/lid.176.ftz /usr/share/rspamd/languages/fasttext_model.ftz \
-	&& passwd --expire _rspamd && passwd --expire _rspamd \
+	&& passwd --expire _rspamd \
 	&& bash -c "find / -mount -newer /proc/1 -not -path '/dev/**' -not -path '/proc/**' -not -path '/sys/**' | xargs touch -h -d '2000-01-01 00:00:00'"
 
 USER	11333:11333
 
+# rspamd exposes RSPAMD_-prefixed env vars to its jinja templates with the
+# prefix stripped: LOCAL_ADDR overrides the per-worker bind address (default
+# localhost) and LOG_TYPE overrides logging.type (default "file").
+ENV	RSPAMD_LOCAL_ADDR=* \
+	RSPAMD_LOG_TYPE=console
+
 VOLUME  [ "/var/lib/rspamd" ]
+
+# Probe the controller's unauthenticated /ping endpoint (always returns "pong",
+# never password-gated). Uses bash /dev/tcp so no extra HTTP client is needed.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+	CMD bash -c 'exec 3<>/dev/tcp/127.0.0.1/${RSPAMD_PORT_CONTROLLER:-11334}; printf "GET /ping HTTP/1.0\r\n\r\n" >&3; grep -q pong <&3'
 
 CMD     [ "/usr/bin/rspamd", "-f" ]
 
