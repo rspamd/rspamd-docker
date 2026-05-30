@@ -20,8 +20,7 @@ RUN	--mount=type=cache,from=pkg,source=/deb,target=/deb \
 	&& bash -c "find / -mount -newer /proc/1 -not -path '/dev/**' -not -path '/proc/**' -not -path '/sys/**' | xargs touch -h -d '2000-01-01 00:00:00'"
 
 RUN	--mount=type=cache,from=pkg,source=/deb,target=/deb --mount=type=cache,from=lid,source=/,target=/lid \
-	groupadd --system --badname --gid 11333 _rspamd \
-	&& useradd --system --badname --uid 11333 --gid 11333 --home-dir /var/lib/rspamd --no-create-home --shell /usr/sbin/nologin --comment "rspamd spam filtering system" _rspamd \
+	sed -i 's/^#\?\(FIRST\|LAST\)_SYSTEM_\([UG]\)ID=.*/\1_SYSTEM_\2ID=11333/' /etc/adduser.conf \
 	&& dpkg -i /deb/rspamd${ASAN_TAG}_*_*.deb /deb/rspamd${ASAN_TAG}-dbg_*_*.deb \
 	&& rm -rf /var/log/dpkg.log \
 	&& cp /lid/lid.176.ftz /usr/share/rspamd/languages/fasttext_model.ftz \
