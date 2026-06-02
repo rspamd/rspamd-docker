@@ -1,0 +1,142 @@
+name: refresh_latest
+
+# Keeps the published "latest" release image patched against Debian security
+# updates between rspamd releases. The runtime layer is rebuilt from the
+# released package (pkg-latest), tested, and the floating tags (latest, MAJOR,
+# MAJOR.MINOR) are re-pointed at it. The immutable version-pinned tags
+# (e.g. 4.0.1, 4.0.1-1) are intentionally left untouched.
+#
+# Runs daily a couple of hours before the security scan (security.yml, 00:00)
+# so rspamd/rspamd:latest is freshly patched before it is audited.
+
+on:
+  schedule:
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: rspamd-docker-refresh-latest
+  cancel-in-progress: false
+
+jobs:
+  build_amd64:
+    uses: ./.github/workflows/refresh_build.yml
+    with:
+      platform: amd64
+    permissions:
+      packages: write
+      contents: read
+    secrets: inherit
+
+  build_arm64:
+    uses: ./.github/workflows/refresh_build.yml
+    with:
+      platform: arm64
+    permissions:
+      packages: write
+      contents: read
+    secrets: inherit
+
+  get_tags:
+    runs-on: "ubuntu-22.04"
+    outputs:
+      ghcr_tags: ${{ steps.compute.outputs.ghcr_tags }}
+      dockerhub_tags: ${{ steps.compute.outputs.dockerhub_tags }}
+      rspamd_git: ${{ steps.compute.outputs.rspamd_git }}
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute floating tags from the newest release
+        id: compute
+        run: |
+          RSPAMD_FULL=$(git tag -l 'v*' --sort=-v:refname | head -1 | sed 's/^v//')
+          VERSION_FULL=${RSPAMD_FULL%%+*}
+          VERSION_MAJOR_MINOR=${VERSION_FULL%.*}
+          VERSION_MAJOR=${VERSION_FULL%%.*}
+          echo "Newest release ${RSPAMD_FULL} -> refreshing tags: latest, ${VERSION_MAJOR_MINOR}, ${VERSION_MAJOR}"
+          GHCR=ghcr.io/${{ github.repository }}
+          DH=rspamd/rspamd
+          {
+            echo "ghcr_tags=${GHCR}:latest,${GHCR}:${VERSION_MAJOR_MINOR},${GHCR}:${VERSION_MAJOR}"
+            echo "dockerhub_tags=${DH}:latest,${DH}:${VERSION_MAJOR_MINOR},${DH}:${VERSION_MAJOR}"
+            echo "rspamd_git=${VERSION_FULL}"
+          } >> "$GITHUB_OUTPUT"
+
+  test_amd64:
+    needs: [build_amd64, get_tags]
+    uses: ./.github/workflows/rspamd_test.yml
+    with:
+      image: ghcr.io/${{ github.repository }}@${{ needs.build_amd64.outputs.digest }}
+      tag: "${{ needs.get_tags.outputs.rspamd_git }}"
+
+  test_arm64:
+    needs: [build_arm64, get_tags]
+    uses: ./.github/workflows/rspamd_test.yml
+    with:
+      image: ghcr.io/${{ github.repository }}@${{ needs.build_arm64.outputs.digest }}
+      tag: "${{ needs.get_tags.outputs.rspamd_git }}"
+      platform: arm64
+
+  promote:
+    needs: [build_amd64, build_arm64, get_tags, test_amd64, test_arm64]
+    runs-on: "ubuntu-22.04"
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      # Can be removed when there'd be 0.30.1+ on GH runners
+      - name: Upgrade buildx
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y moby-buildx
+          docker buildx version
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Re-point floating release tags on GHCR
+        run: |
+          IFS=, read -r -a tags <<< "${{ needs.get_tags.outputs.ghcr_tags }}"
+          for tag in "${tags[@]}"
+          do
+            TAGLIST+=" -t ${tag} "
+          done
+          # TAGLIST holds multiple "-t <tag>" args that must word-split.
+          # shellcheck disable=SC2086
+          docker buildx imagetools create ${TAGLIST} \
+            ghcr.io/${{ github.repository }}@${{ needs.build_amd64.outputs.digest }} \
+            ghcr.io/${{ github.repository }}@${{ needs.build_arm64.outputs.digest }}
+
+      - name: Check for Dockerhub secrets
+        run: |
+          if [ -n "${{ secrets.DOCKER_USERNAME }}" ]; then
+            echo "HAVE_DOCKERHUB=1" >> "$GITHUB_ENV"
+          fi
+
+      - name: Log in to Dockerhub
+        if: ${{ env.HAVE_DOCKERHUB }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Re-point floating release tags on Dockerhub
+        if: ${{ env.HAVE_DOCKERHUB }}
+        run: |
+          IFS=, read -r -a tags <<< "${{ needs.get_tags.outputs.dockerhub_tags }}"
+          for tag in "${tags[@]}"
+          do
+            TAGLIST+=" -t ${tag} "
+          done
+          # TAGLIST holds multiple "-t <tag>" args that must word-split.
+          # shellcheck disable=SC2086
+          docker buildx imagetools create ${TAGLIST} \
+            ghcr.io/${{ github.repository }}@${{ needs.build_amd64.outputs.digest }} \
+            ghcr.io/${{ github.repository }}@${{ needs.build_arm64.outputs.digest }}
