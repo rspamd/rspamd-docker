@@ -149,4 +149,5 @@ runs:
           echo "org.opencontainers.image.licenses=Apache-2.0"
           echo "org.opencontainers.image.version=${version}"
           echo "org.opencontainers.image.revision=${REV}"
+          echo "__OCI__"
         } >> "$GITHUB_OUTPUT"
