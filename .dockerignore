@@ -1,0 +1,9 @@
+# Keep the build context minimal — none of these are needed to build the image.
+# The runtime Dockerfile only needs lid.176.ftz (+ the Dockerfiles themselves);
+# Dockerfile.pkg fetches rspamd from git and needs nothing from the context.
+.git
+.github
+.claude
+examples/
+*.md
+LICENSE
