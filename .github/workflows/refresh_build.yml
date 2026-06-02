@@ -1,0 +1,57 @@
+name: refresh_build
+
+# Rebuilds the runtime (release) image for a single platform from the already
+# released package image (pkg-latest) on top of a freshly pulled
+# debian:trixie-slim. rspamd itself is NOT rebuilt from source: only the thin
+# runtime layer is reassembled so the image picks up the current Debian security
+# updates. Pushes the result by digest for the caller to promote.
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        default: amd64
+        type: string
+    outputs:
+      digest:
+        description: "Digest of the rebuilt release image"
+        value: ${{ jobs.refresh_build.outputs.digest }}
+
+jobs:
+  refresh_build:
+    outputs:
+      digest: "${{ steps.build_release.outputs.digest }}"
+    runs-on: "${{ (inputs.platform == 'arm64') && 'ubuntu-22.04-arm' || 'ubuntu-22.04' }}"
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # pull + no-cache guarantee the apt-get layer is re-evaluated against the
+      # current debian:trixie-slim and package archive rather than reusing a
+      # cached layer with the previously installed (vulnerable) versions.
+      - name: Build release image
+        id: build_release
+        uses: docker/build-push-action@v5
+        with:
+          build-args: |
+            PKG_IMG=ghcr.io/${{ github.repository }}
+            PKG_TAG=pkg-latest
+          pull: true
+          no-cache: true
+          file: Dockerfile
+          push: true
+          tags: ""
+          outputs: "type=image,name=ghcr.io/${{ github.repository }},push-by-digest=true"
