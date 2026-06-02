@@ -82,6 +82,25 @@ jobs:
           tags: ""
           outputs: "type=image,name=ghcr.io/${{ github.repository }},push-by-digest=true"
 
+      - name: Generate SBOM for the release image
+        uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/${{ github.repository }}@${{ steps.build_release.outputs.digest }}
+          format: spdx-json
+          artifact-name: sbom-${{ inputs.platform }}.spdx.json
+
+      # Gate: a *fixable* high/critical vulnerability fails the build before the
+      # image can be tested or promoted. The daily security.yml keeps the broader
+      # low-severity report; this only blocks serious, actionable issues.
+      - name: Scan release image (gate)
+        uses: anchore/scan-action@v7
+        with:
+          image: ghcr.io/${{ github.repository }}@${{ steps.build_release.outputs.digest }}
+          only-fixed: true
+          severity-cutoff: high
+          fail-build: true
+          output-format: table
+
       - name: Build ASAN image
         id: build_asan
         uses: docker/build-push-action@v5
