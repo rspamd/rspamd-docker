@@ -50,51 +50,23 @@ jobs:
 
   get_tags:
     outputs:
-      dockerhub_tags_asan: ${{ steps.save_output.outputs.dockerhub_tags_asan }}
-      dockerhub_tags_release: ${{ steps.save_output.outputs.dockerhub_tags_release }}
-      ghcr_tags_asan: ${{ steps.save_output.outputs.ghcr_tags_asan }}
-      ghcr_tags_release: ${{ steps.save_output.outputs.ghcr_tags_release }}
-      ghcr_tags_package: ${{ steps.save_output.outputs.ghcr_tags_package }}
-      dockerhub_tags_package: ${{ steps.save_output.outputs.dockerhub_tags_package }}
+      dockerhub_tags_asan: ${{ steps.compute.outputs.dockerhub_tags_asan }}
+      dockerhub_tags_release: ${{ steps.compute.outputs.dockerhub_tags_release }}
+      ghcr_tags_asan: ${{ steps.compute.outputs.ghcr_tags_asan }}
+      ghcr_tags_release: ${{ steps.compute.outputs.ghcr_tags_release }}
+      ghcr_tags_package: ${{ steps.compute.outputs.ghcr_tags_package }}
+      dockerhub_tags_package: ${{ steps.compute.outputs.dockerhub_tags_package }}
     runs-on: "ubuntu-22.04"
     steps:
-      - name: Set nightly-specific variables
-        if: ${{ inputs.nightly }}
-        run: |
-          echo "IMG_TAGS_GHCR_ASAN=ghcr.io/${{ github.repository }}:asan-nightly" >> "$GITHUB_ENV"
-          echo "IMG_TAGS_GHCR_RELEASE=ghcr.io/${{ github.repository }}:nightly" >> "$GITHUB_ENV"
-          echo "IMG_TAGS_GHCR_PKG=ghcr.io/${{ github.repository }}:pkg-nightly" >> "$GITHUB_ENV"
-          echo "IMG_TAGS_DOCKERHUB_ASAN=${{ inputs.dockerhub_name }}:asan-nightly" >> "$GITHUB_ENV"
-          echo "IMG_TAGS_DOCKERHUB_RELEASE=${{ inputs.dockerhub_name }}:nightly" >> "$GITHUB_ENV"
-          echo "IMG_TAGS_DOCKERHUB_PKG=${{ inputs.dockerhub_name }}:pkg-nightly" >> "$GITHUB_ENV"
+      - name: Check out source code
+        uses: actions/checkout@v4
 
-      - name: Set release-specific variables
-        if: ${{ ! inputs.nightly }}
-        run: |
-          export VERSION_BUILD=`echo ${{ github.ref_name }} | sed s/^v// | sed 's/\+/-/'`
-          echo "VERSION_BUILD=${VERSION_BUILD}" >> "$GITHUB_ENV"
-          export VERSION_FULL=`echo ${{ github.ref_name }} | sed s/^v// | sed 's/\+.*//'`
-          echo "VERSION_FULL=${VERSION_FULL}" >> "$GITHUB_ENV"
-          export VERSION_MAJOR_MINOR=${VERSION_FULL%.*}
-          echo "VERSION_MAJOR_MINOR=${VERSION_MAJOR_MINOR}" >> "$GITHUB_ENV"
-          export VERSION_MAJOR=`echo ${{ github.ref_name }} | sed s/^v// | sed 's/[^0-9].*//'`
-          echo "VERSION_MAJOR=${VERSION_MAJOR}" >> "$GITHUB_ENV"
-          echo "IMG_TAGS_DOCKERHUB_ASAN=${{ inputs.dockerhub_name }}:asan-latest,${{ inputs.dockerhub_name }}:asan-${VERSION_BUILD},${{ inputs.dockerhub_name }}:asan-${VERSION_FULL},${{ inputs.dockerhub_name }}:asan-${VERSION_MAJOR_MINOR},${{ inputs.dockerhub_name }}:asan-${VERSION_MAJOR}" >> "$GITHUB_ENV"
-          echo "IMG_TAGS_GHCR_ASAN=ghcr.io/${{ github.repository }}:asan-latest,ghcr.io/${{ github.repository }}:asan-${VERSION_BUILD},ghcr.io/${{ github.repository }}:asan-${VERSION_FULL},ghcr.io/${{ github.repository }}:asan-${VERSION_MAJOR_MINOR},ghcr.io/${{ github.repository }}:asan-${VERSION_MAJOR}" >> "$GITHUB_ENV"
-          echo "IMG_TAGS_DOCKERHUB_RELEASE=${{ inputs.dockerhub_name }}:latest,${{ inputs.dockerhub_name }}:${VERSION_BUILD},${{ inputs.dockerhub_name }}:${VERSION_FULL},${{ inputs.dockerhub_name }}:${VERSION_MAJOR_MINOR},${{ inputs.dockerhub_name }}:${VERSION_MAJOR}" >> "$GITHUB_ENV"
-          echo "IMG_TAGS_GHCR_RELEASE=ghcr.io/${{ github.repository }}:latest,ghcr.io/${{ github.repository }}:${VERSION_BUILD},ghcr.io/${{ github.repository }}:${VERSION_FULL},ghcr.io/${{ github.repository }}:${VERSION_MAJOR_MINOR},ghcr.io/${{ github.repository }}:${VERSION_MAJOR}" >> "$GITHUB_ENV"
-          echo "IMG_TAGS_DOCKERHUB_PKG=${{ inputs.dockerhub_name }}:pkg-latest" >> "$GITHUB_ENV"
-          echo "IMG_TAGS_GHCR_PKG=ghcr.io/${{ github.repository }}:pkg-latest" >> "$GITHUB_ENV"
-
-      - name: Save output
-        id: save_output
-        run: |
-          echo "dockerhub_tags_asan=${{ env.IMG_TAGS_DOCKERHUB_ASAN }}" >> $GITHUB_OUTPUT
-          echo "dockerhub_tags_release=${{ env.IMG_TAGS_DOCKERHUB_RELEASE }}" >> $GITHUB_OUTPUT
-          echo "ghcr_tags_asan=${{ env.IMG_TAGS_GHCR_ASAN }}" >> $GITHUB_OUTPUT
-          echo "ghcr_tags_release=${{ env.IMG_TAGS_GHCR_RELEASE }}" >> $GITHUB_OUTPUT
-          echo "ghcr_tags_package=${{ env.IMG_TAGS_GHCR_PKG }}" >> $GITHUB_OUTPUT
-          echo "dockerhub_tags_package=${{ env.IMG_TAGS_DOCKERHUB_PKG }}" >> $GITHUB_OUTPUT
+      - name: Compute tags
+        id: compute
+        uses: ./.github/actions/compute-tags
+        with:
+          nightly: ${{ inputs.nightly }}
+          dockerhub_name: ${{ inputs.dockerhub_name }}
 
   promote:
     needs: [build_amd64, build_arm64, get_tags, test_amd64, test_arm64]

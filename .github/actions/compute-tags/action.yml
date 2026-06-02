@@ -1,0 +1,153 @@
+name: compute-tags
+description: >-
+  Compute build arguments, image tag lists and OCI labels for rspamd-docker
+  builds. Centralises the version parsing that was previously duplicated across
+  docker_build.yml, build_test_promote.yml and refresh_latest.yml.
+
+inputs:
+  nightly:
+    description: '"true" for nightly builds, "false" for tagged releases'
+    required: true
+  ref_name:
+    description: 'Release tag to parse (e.g. v4.0.1+1); defaults to the triggering ref'
+    required: false
+    default: ${{ github.ref_name }}
+  platform:
+    description: 'Target platform (amd64/arm64); appended to the per-platform pkg tag suffix'
+    required: false
+    default: ''
+  repository:
+    description: 'GHCR repository (owner/name)'
+    required: false
+    default: ${{ github.repository }}
+  dockerhub_name:
+    description: 'Docker Hub image name'
+    required: false
+    default: rspamd/rspamd
+  floating_only:
+    description: 'Emit only the floating release tags (latest, MAJOR, MAJOR.MINOR)'
+    required: false
+    default: 'false'
+
+outputs:
+  pkg_tag_suffix:
+    description: 'Suffix for the pkg image tag (e.g. -nightly-amd64, -4.0.1-1-amd64)'
+    value: ${{ steps.c.outputs.pkg_tag_suffix }}
+  rspamd_git:
+    description: 'rspamd git ref to build/test (master or the release version)'
+    value: ${{ steps.c.outputs.rspamd_git }}
+  rspamd_version:
+    description: 'rspamd version build-arg (auto for nightly, else the release version)'
+    value: ${{ steps.c.outputs.rspamd_version }}
+  tag:
+    description: 'rspamd ref to check out for tests (alias of rspamd_git)'
+    value: ${{ steps.c.outputs.rspamd_git }}
+  version:
+    description: 'Human version string for labels (nightly or the release version)'
+    value: ${{ steps.c.outputs.version }}
+  ghcr_tags_release:
+    value: ${{ steps.c.outputs.ghcr_tags_release }}
+  ghcr_tags_asan:
+    value: ${{ steps.c.outputs.ghcr_tags_asan }}
+  ghcr_tags_package:
+    value: ${{ steps.c.outputs.ghcr_tags_package }}
+  dockerhub_tags_release:
+    value: ${{ steps.c.outputs.dockerhub_tags_release }}
+  dockerhub_tags_asan:
+    value: ${{ steps.c.outputs.dockerhub_tags_asan }}
+  dockerhub_tags_package:
+    value: ${{ steps.c.outputs.dockerhub_tags_package }}
+  labels:
+    description: 'Newline-separated OCI image labels'
+    value: ${{ steps.c.outputs.labels }}
+
+runs:
+  using: composite
+  steps:
+    - id: c
+      shell: bash
+      env:
+        NIGHTLY: ${{ inputs.nightly }}
+        REF_NAME: ${{ inputs.ref_name }}
+        PLATFORM: ${{ inputs.platform }}
+        REPO: ${{ inputs.repository }}
+        DH: ${{ inputs.dockerhub_name }}
+        FLOATING_ONLY: ${{ inputs.floating_only }}
+        REV: ${{ github.sha }}
+      run: |
+        set -euo pipefail
+
+        # Prefix every comma-separated tag in $2 with $1 and re-join with commas.
+        prefix() {
+          local p="$1" out="" e IFS=,
+          for e in $2; do out="${out:+$out,}${p}${e}"; done
+          printf '%s' "$out"
+        }
+
+        GHCR="ghcr.io/${REPO}"
+        plat_suffix=""
+        [ -n "${PLATFORM}" ] && plat_suffix="-${PLATFORM}"
+
+        if [ "${NIGHTLY}" = "true" ]; then
+          pkg_tag_suffix="-nightly${plat_suffix}"
+          rspamd_git="master"
+          rspamd_version="auto"
+          version="nightly"
+          ghcr_tags_release="${GHCR}:nightly"
+          ghcr_tags_asan="${GHCR}:asan-nightly"
+          ghcr_tags_package="${GHCR}:pkg-nightly"
+          dockerhub_tags_release="${DH}:nightly"
+          dockerhub_tags_asan="${DH}:asan-nightly"
+          dockerhub_tags_package="${DH}:pkg-nightly"
+        else
+          v="${REF_NAME#v}"                            # 4.0.1+1
+          version_build="${v/+/-}"                     # 4.0.1-1 (first + only)
+          version_full="${v%%+*}"                      # 4.0.1
+          version_major_minor="${version_full%.*}"     # 4.0
+          version_major="${version_full%%.*}"          # 4
+          rspamd_git="${version_full}"
+          rspamd_version="${version_full}"
+          version="${version_full}"
+          rs="${REF_NAME/+/-}"; rs="${rs#v}"           # 4.0.1-1
+          pkg_tag_suffix="-${rs}${plat_suffix}"
+          if [ "${FLOATING_ONLY}" = "true" ]; then
+            rel="latest,${version_major_minor},${version_major}"
+            asan="asan-latest,asan-${version_major_minor},asan-${version_major}"
+          else
+            rel="latest,${version_build},${version_full},${version_major_minor},${version_major}"
+            asan="asan-latest,asan-${version_build},asan-${version_full},asan-${version_major_minor},asan-${version_major}"
+          fi
+          ghcr_tags_release="$(prefix "${GHCR}:" "${rel}")"
+          ghcr_tags_asan="$(prefix "${GHCR}:" "${asan}")"
+          ghcr_tags_package="${GHCR}:pkg-latest"
+          dockerhub_tags_release="$(prefix "${DH}:" "${rel}")"
+          dockerhub_tags_asan="$(prefix "${DH}:" "${asan}")"
+          dockerhub_tags_package="${DH}:pkg-latest"
+        fi
+
+        {
+          echo "pkg_tag_suffix=${pkg_tag_suffix}"
+          echo "rspamd_git=${rspamd_git}"
+          echo "rspamd_version=${rspamd_version}"
+          echo "version=${version}"
+          echo "ghcr_tags_release=${ghcr_tags_release}"
+          echo "ghcr_tags_asan=${ghcr_tags_asan}"
+          echo "ghcr_tags_package=${ghcr_tags_package}"
+          echo "dockerhub_tags_release=${dockerhub_tags_release}"
+          echo "dockerhub_tags_asan=${dockerhub_tags_asan}"
+          echo "dockerhub_tags_package=${dockerhub_tags_package}"
+        } >> "$GITHUB_OUTPUT"
+
+        {
+          echo "labels<<__OCI__"
+          echo "org.opencontainers.image.source=https://github.com/${REPO}"
+          echo "org.opencontainers.image.url=https://rspamd.com"
+          echo "org.opencontainers.image.documentation=https://rspamd.com/doc/"
+          echo "org.opencontainers.image.title=Rspamd"
+          echo "org.opencontainers.image.description=Rspamd spam filtering system"
+          echo "org.opencontainers.image.vendor=Rspamd"
+          echo "org.opencontainers.image.licenses=Apache-2.0"
+          echo "org.opencontainers.image.version=${version}"
+          echo "org.opencontainers.image.revision=${REV}"
+          echo "__OCI__"
+        } >> "$GITHUB_OUTPUT"
