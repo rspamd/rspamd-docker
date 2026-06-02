@@ -40,8 +40,8 @@ jobs:
   get_tags:
     runs-on: "ubuntu-22.04"
     outputs:
-      ghcr_tags: ${{ steps.compute.outputs.ghcr_tags }}
-      dockerhub_tags: ${{ steps.compute.outputs.dockerhub_tags }}
+      ghcr_tags: ${{ steps.compute.outputs.ghcr_tags_release }}
+      dockerhub_tags: ${{ steps.compute.outputs.dockerhub_tags_release }}
       rspamd_git: ${{ steps.compute.outputs.rspamd_git }}
     steps:
       - name: Check out source code
@@ -49,21 +49,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Compute floating tags from the newest release
+      - name: Find the newest release tag
+        id: newest
+        run: echo "ref=$(git tag -l 'v*' --sort=-v:refname | head -1)" >> "$GITHUB_OUTPUT"
+
+      - name: Compute floating tags
         id: compute
-        run: |
-          RSPAMD_FULL=$(git tag -l 'v*' --sort=-v:refname | head -1 | sed 's/^v//')
-          VERSION_FULL=${RSPAMD_FULL%%+*}
-          VERSION_MAJOR_MINOR=${VERSION_FULL%.*}
-          VERSION_MAJOR=${VERSION_FULL%%.*}
-          echo "Newest release ${RSPAMD_FULL} -> refreshing tags: latest, ${VERSION_MAJOR_MINOR}, ${VERSION_MAJOR}"
-          GHCR=ghcr.io/${{ github.repository }}
-          DH=rspamd/rspamd
-          {
-            echo "ghcr_tags=${GHCR}:latest,${GHCR}:${VERSION_MAJOR_MINOR},${GHCR}:${VERSION_MAJOR}"
-            echo "dockerhub_tags=${DH}:latest,${DH}:${VERSION_MAJOR_MINOR},${DH}:${VERSION_MAJOR}"
-            echo "rspamd_git=${VERSION_FULL}"
-          } >> "$GITHUB_OUTPUT"
+        uses: ./.github/actions/compute-tags
+        with:
+          nightly: "false"
+          ref_name: ${{ steps.newest.outputs.ref }}
+          floating_only: "true"
 
   test_amd64:
     needs: [build_amd64, get_tags]
