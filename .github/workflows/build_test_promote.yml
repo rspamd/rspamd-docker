@@ -13,42 +13,80 @@ on:
         type: boolean
 
 jobs:
+  # Resolve the rspamd ref to one commit (and one git describe) for the whole
+  # run, so both architecture builds and the tests use the same source.
+  resolve:
+    runs-on: "ubuntu-22.04"
+    outputs:
+      rspamd_commit: ${{ steps.rspamd.outputs.commit }}
+      rspamd_describe: ${{ steps.rspamd.outputs.describe }}
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Compute rspamd ref
+        id: compute
+        uses: ./.github/actions/compute-tags
+        with:
+          nightly: ${{ inputs.nightly }}
+
+      - name: Resolve rspamd commit and describe
+        id: rspamd
+        uses: ./.github/actions/resolve-rspamd
+        with:
+          ref: ${{ steps.compute.outputs.rspamd_git }}
+
   build_amd64:
+    needs: [resolve]
     uses: ./.github/workflows/docker_build.yml
     with:
       nightly: ${{ inputs.nightly }}
       platform: amd64
+      rspamd_commit: ${{ needs.resolve.outputs.rspamd_commit }}
+      rspamd_describe: ${{ needs.resolve.outputs.rspamd_describe }}
     permissions:
       packages: write
       contents: read
     secrets: inherit
 
   build_arm64:
+    needs: [resolve]
     uses: ./.github/workflows/docker_build.yml
     with:
       nightly: ${{ inputs.nightly }}
       platform: arm64
+      rspamd_commit: ${{ needs.resolve.outputs.rspamd_commit }}
+      rspamd_describe: ${{ needs.resolve.outputs.rspamd_describe }}
     permissions:
       packages: write
       contents: read
     secrets: inherit
 
   test_amd64:
-    needs: [build_amd64]
+    needs: [resolve, build_amd64]
     uses: ./.github/workflows/rspamd_test.yml
     with:
       image: ghcr.io/${{ github.repository }}@${{ needs.build_amd64.outputs.digest_release }}
+      image_asan: ghcr.io/${{ github.repository }}@${{ needs.build_amd64.outputs.digest_asan }}
       tag: "${{ needs.build_amd64.outputs.tag }}"
+      commit: ${{ needs.resolve.outputs.rspamd_commit }}
+      describe: ${{ needs.resolve.outputs.rspamd_describe }}
+      release: ${{ !inputs.nightly }}
 
   test_arm64:
-    needs: [build_arm64]
+    needs: [resolve, build_arm64]
     uses: ./.github/workflows/rspamd_test.yml
     with:
       image: ghcr.io/${{ github.repository }}@${{ needs.build_arm64.outputs.digest_release }}
+      image_asan: ghcr.io/${{ github.repository }}@${{ needs.build_arm64.outputs.digest_asan }}
       tag: "${{ needs.build_arm64.outputs.tag }}"
+      commit: ${{ needs.resolve.outputs.rspamd_commit }}
+      describe: ${{ needs.resolve.outputs.rspamd_describe }}
+      release: ${{ !inputs.nightly }}
       platform: arm64
 
   get_tags:
+    needs: [resolve]
     outputs:
       dockerhub_tags_asan: ${{ steps.compute.outputs.dockerhub_tags_asan }}
       dockerhub_tags_release: ${{ steps.compute.outputs.dockerhub_tags_release }}
@@ -67,6 +105,8 @@ jobs:
         with:
           nightly: ${{ inputs.nightly }}
           dockerhub_name: ${{ inputs.dockerhub_name }}
+          rspamd_commit: ${{ needs.resolve.outputs.rspamd_commit }}
+          rspamd_describe: ${{ needs.resolve.outputs.rspamd_describe }}
 
   promote:
     needs: [build_amd64, build_arm64, get_tags, test_amd64, test_arm64]

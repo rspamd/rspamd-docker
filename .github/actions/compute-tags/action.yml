@@ -28,6 +28,14 @@ inputs:
     description: 'Emit only the floating release tags (latest, MAJOR, MAJOR.MINOR)'
     required: false
     default: 'false'
+  rspamd_commit:
+    description: 'Full sha of the rspamd commit that was built (adds the com.rspamd.git.commit label)'
+    required: false
+    default: ''
+  rspamd_describe:
+    description: 'git describe of that commit; adds the com.rspamd.git.describe label and, for nightlies, the nightly-<describe> tags'
+    required: false
+    default: ''
 
 outputs:
   pkg_tag_suffix:
@@ -73,6 +81,8 @@ runs:
         REPO: ${{ inputs.repository }}
         DH: ${{ inputs.dockerhub_name }}
         FLOATING_ONLY: ${{ inputs.floating_only }}
+        GIT_COMMIT: ${{ inputs.rspamd_commit }}
+        GIT_DESCRIBE: ${{ inputs.rspamd_describe }}
         REV: ${{ github.sha }}
       run: |
         set -euo pipefail
@@ -99,6 +109,14 @@ runs:
           dockerhub_tags_release="${DH}:nightly"
           dockerhub_tags_asan="${DH}:asan-nightly"
           dockerhub_tags_package="${DH}:pkg-nightly"
+          if [ -n "${GIT_DESCRIBE}" ]; then
+            # Per-commit tags; the nightly- prefix keeps them distinct
+            # from the X.Y.Z-N release build tags.
+            ghcr_tags_release+=",${GHCR}:nightly-${GIT_DESCRIBE}"
+            ghcr_tags_asan+=",${GHCR}:asan-nightly-${GIT_DESCRIBE}"
+            dockerhub_tags_release+=",${DH}:nightly-${GIT_DESCRIBE}"
+            dockerhub_tags_asan+=",${DH}:asan-nightly-${GIT_DESCRIBE}"
+          fi
         else
           v="${REF_NAME#v}"                            # 4.0.1+1
           version_build="${v/+/-}"                     # 4.0.1-1 (first + only)
@@ -149,5 +167,7 @@ runs:
           echo "org.opencontainers.image.licenses=Apache-2.0"
           echo "org.opencontainers.image.version=${version}"
           echo "org.opencontainers.image.revision=${REV}"
+          [ -z "${GIT_DESCRIBE}" ] || echo "com.rspamd.git.describe=${GIT_DESCRIBE}"
+          [ -z "${GIT_COMMIT}" ] || echo "com.rspamd.git.commit=${GIT_COMMIT}"
           echo "__OCI__"
         } >> "$GITHUB_OUTPUT"
