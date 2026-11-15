@@ -20,18 +20,22 @@ concurrency:
 
 jobs:
   build_amd64:
+    needs: [get_tags]
     uses: ./.github/workflows/refresh_build.yml
     with:
       platform: amd64
+      labels: ${{ needs.get_tags.outputs.labels }}
     permissions:
       packages: write
       contents: read
     secrets: inherit
 
   build_arm64:
+    needs: [get_tags]
     uses: ./.github/workflows/refresh_build.yml
     with:
       platform: arm64
+      labels: ${{ needs.get_tags.outputs.labels }}
     permissions:
       packages: write
       contents: read
@@ -43,6 +47,9 @@ jobs:
       ghcr_tags: ${{ steps.compute.outputs.ghcr_tags_release }}
       dockerhub_tags: ${{ steps.compute.outputs.dockerhub_tags_release }}
       rspamd_git: ${{ steps.compute.outputs.rspamd_git }}
+      rspamd_commit: ${{ steps.rspamd.outputs.commit }}
+      rspamd_describe: ${{ steps.rspamd.outputs.describe }}
+      labels: ${{ steps.labelled.outputs.labels }}
     steps:
       - name: Check out source code
         uses: actions/checkout@v4
@@ -61,12 +68,33 @@ jobs:
           ref_name: ${{ steps.newest.outputs.ref }}
           floating_only: "true"
 
+      # The runtime image is rebuilt from the released pkg-latest, so its
+      # identity is that of the newest release tag, not of master.
+      - name: Resolve rspamd commit and describe
+        id: rspamd
+        uses: ./.github/actions/resolve-rspamd
+        with:
+          ref: ${{ steps.compute.outputs.rspamd_git }}
+
+      - name: Compute labels
+        id: labelled
+        uses: ./.github/actions/compute-tags
+        with:
+          nightly: "false"
+          ref_name: ${{ steps.newest.outputs.ref }}
+          floating_only: "true"
+          rspamd_commit: ${{ steps.rspamd.outputs.commit }}
+          rspamd_describe: ${{ steps.rspamd.outputs.describe }}
+
   test_amd64:
     needs: [build_amd64, get_tags]
     uses: ./.github/workflows/rspamd_test.yml
     with:
       image: ghcr.io/${{ github.repository }}@${{ needs.build_amd64.outputs.digest }}
       tag: "${{ needs.get_tags.outputs.rspamd_git }}"
+      commit: ${{ needs.get_tags.outputs.rspamd_commit }}
+      describe: ${{ needs.get_tags.outputs.rspamd_describe }}
+      release: true
 
   test_arm64:
     needs: [build_arm64, get_tags]
@@ -74,6 +102,9 @@ jobs:
     with:
       image: ghcr.io/${{ github.repository }}@${{ needs.build_arm64.outputs.digest }}
       tag: "${{ needs.get_tags.outputs.rspamd_git }}"
+      commit: ${{ needs.get_tags.outputs.rspamd_commit }}
+      describe: ${{ needs.get_tags.outputs.rspamd_describe }}
+      release: true
       platform: arm64
 
   promote:

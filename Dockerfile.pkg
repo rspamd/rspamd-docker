@@ -1,6 +1,8 @@
 ARG ASAN_TAG
 ARG DEBIAN_RELEASE=trixie
+ARG RSPAMD_COMMIT
 ARG RSPAMD_GIT
+ARG RSPAMD_GIT_DESCRIBE
 ARG RSPAMD_VERSION
 ARG TARGETARCH
 
@@ -10,7 +12,9 @@ RUN mkdir /build /deb && chown nobody:nogroup /build /deb \
 	&& apt-get update \
 	&& apt-get install -y libfasttext-dev
 
+ARG RSPAMD_COMMIT
 ARG RSPAMD_GIT
+ARG RSPAMD_GIT_DESCRIBE
 ARG RSPAMD_VERSION
 ENV RSPAMD_GIT=$RSPAMD_GIT
 ENV RSPAMD_VERSION=$RSPAMD_VERSION
@@ -18,8 +22,45 @@ ENV RSPAMD_VERSION=$RSPAMD_VERSION
 USER nobody
 WORKDIR /build
 
+# RSPAMD_COMMIT pins the exact commit (resolved once per workflow run so every
+# architecture builds the same source). RSPAMD_GIT_DESCRIBE is the matching
+# `git describe` string; both are optional for local builds. The describe is
+# validated before debian/* is edited. For releases (RSPAMD_VERSION != auto) the
+# checked-out commit must be exactly the release tag: <version>-0-g<hash>.
 RUN	git clone -b ${RSPAMD_GIT} https://github.com/rspamd/rspamd.git \
 	&& cd rspamd \
+	&& if [ -n "${RSPAMD_COMMIT}" ]; then git checkout --detach "${RSPAMD_COMMIT}"; fi \
+	&& HEAD_SHA="$(git rev-parse HEAD)" \
+	&& GIT_DESCRIBE="$(git describe --tags --long --abbrev=12 --match '[0-9]*.[0-9]*' --exclude '*-*')" \
+	&& if [ -n "${RSPAMD_GIT_DESCRIBE}" ]; then \
+	     case "${RSPAMD_GIT_DESCRIBE}" in \
+	       *-g[0-9a-f]*) ;; \
+	       *) echo "RSPAMD_GIT_DESCRIBE '${RSPAMD_GIT_DESCRIBE}' is malformed" >&2; exit 1 ;; \
+	     esac; \
+	     SUPPLIED_HASH="${RSPAMD_GIT_DESCRIBE##*-g}"; \
+	     case "${HEAD_SHA}" in \
+	       "${SUPPLIED_HASH}"*) ;; \
+	       *) echo "RSPAMD_GIT_DESCRIBE '${RSPAMD_GIT_DESCRIBE}' does not match checked out ${HEAD_SHA}" >&2; exit 1 ;; \
+	     esac; \
+	     if [ "${RSPAMD_GIT_DESCRIBE%-g*}" != "${GIT_DESCRIBE%-g*}" ]; then \
+	       echo "RSPAMD_GIT_DESCRIBE '${RSPAMD_GIT_DESCRIBE}' (tag/distance) differs from computed '${GIT_DESCRIBE}'" >&2; exit 1; \
+	     fi; \
+	     case "${GIT_DESCRIBE##*-g}" in \
+	       "${SUPPLIED_HASH}"*) ;; \
+	       *) echo "RSPAMD_GIT_DESCRIBE '${RSPAMD_GIT_DESCRIBE}' hash differs from computed '${GIT_DESCRIBE}'" >&2; exit 1 ;; \
+	     esac; \
+	     GIT_DESCRIBE="${RSPAMD_GIT_DESCRIBE}"; \
+	   fi \
+	&& if ! printf '%s\n' "${GIT_DESCRIBE}" | grep -Eq '^[0-9][0-9.]*-[0-9]+-g[0-9a-f]{7,40}$'; then \
+	     echo "Invalid git describe '${GIT_DESCRIBE}'" >&2; exit 1; \
+	   fi \
+	&& if [ "${RSPAMD_VERSION}" != "auto" ]; then \
+	     case "${GIT_DESCRIBE}" in \
+	       "${RSPAMD_VERSION}-0-g"*) ;; \
+	       *) echo "Release ${RSPAMD_VERSION} must build exactly its tag, got '${GIT_DESCRIBE}'" >&2; exit 1 ;; \
+	     esac; \
+	   fi \
+	&& echo "Building rspamd ${HEAD_SHA} (${GIT_DESCRIBE})" \
 	&& if [ "${RSPAMD_VERSION}" = "auto" ]; then \
 	     VDESC="$(git describe --tags --always | tr - +)+nightly$(date -u +%Y%m%d)"; \
 	     echo "Nightly version: ${VDESC}"; \
@@ -27,7 +68,7 @@ RUN	git clone -b ${RSPAMD_GIT} https://github.com/rspamd/rspamd.git \
 	   else \
 	     sed -i "s/(.*)/(${RSPAMD_VERSION})/" debian/changelog; \
 	   fi \
-	&& sed -i "s|^EXTRA_ARGS :=.*|EXTRA_ARGS := -DGIT_ID=$(git rev-parse --short HEAD) -DCONFDIR=/usr/share/rspamd/config -DLOCAL_CONFDIR=/etc/rspamd -DENABLE_FASTTEXT=ON|" debian/rules \
+	&& sed -i "s|^EXTRA_ARGS :=.*|EXTRA_ARGS := -DGIT_ID=$(printf '%s' "${HEAD_SHA}" | cut -c1-9) -DGIT_DESCRIBE=${GIT_DESCRIBE} -DCONFDIR=/usr/share/rspamd/config -DLOCAL_CONFDIR=/etc/rspamd -DENABLE_FASTTEXT=ON|" debian/rules \
 	&& sed -i s/quilt/native/ debian/source/format \
 	&& debuild -us -uc \
 	&& mv /build/*.deb /deb/ \

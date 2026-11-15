@@ -12,6 +12,11 @@ on:
       platform:
         default: amd64
         type: string
+      labels:
+        description: "Newline-separated OCI labels for the rebuilt image (from compute-tags)"
+        default: ""
+        required: false
+        type: string
     outputs:
       digest:
         description: "Digest of the rebuilt release image"
@@ -49,6 +54,9 @@ jobs:
           build-args: |
             PKG_IMG=ghcr.io/${{ github.repository }}
             PKG_TAG=pkg-latest
+          labels: |
+            ${{ inputs.labels }}
+            com.rspamd.pkg-tag=pkg-latest
           pull: true
           no-cache: true
           file: Dockerfile

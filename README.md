@@ -236,12 +236,29 @@ just use `latest`.
 | `4` | Latest stable in the 4.x series. Also refreshed daily. |
 | `4.0.1` | A specific, immutable release build. |
 | `nightly` | Unstable rolling release, built nightly from `master`. |
+| `nightly-4.0.1-37-g0123456789ab` | A specific nightly build, pinned to one commit and named after `git describe` of the built commit (`asan-nightly-<describe>` for the ASAN variant). |
 | `asan-latest`, `asan-4.0`, `asan-nightly`, … | [AddressSanitizer](https://rspamd.com/doc/developers/writing_rules.html) variants, for debugging. |
 | `pkg-latest`, `pkg-nightly` | Package-only images carrying the built `.deb`s; used internally by the build pipeline. |
 
 All images are multi-arch (`linux/amd64` + `linux/arm64`) and published to both
 [Docker Hub](https://hub.docker.com/r/rspamd/rspamd) and
 [GHCR](https://github.com/rspamd/rspamd-docker/pkgs/container/rspamd-docker).
+
+### Build identity
+
+Every image carries the exact rspamd source it was built from:
+
+- the labels `com.rspamd.git.describe` (e.g. `4.0.1-37-g0123456789ab`: last
+  release tag, commits since it, commit hash) and `com.rspamd.git.commit` (full
+  sha), readable with `docker inspect --format '{{json .Config.Labels}}' rspamd/rspamd:nightly`;
+- on rspamd versions that support it, the same describe string inside rspamd
+  itself, available as Lua `rspamd_version('describe')`. `rspamd --version`
+  shows it on development (nightly) builds only, as
+  `4.0.2-dev (4.0.1-37-g0123456789ab)`; release builds print the plain
+  version. For the exact string of any image use the
+  `com.rspamd.git.describe` label or the `nightly-<describe>` tag.
+
+Both architectures of a build, and the tests run against it, use the same commit.
 
 ---
 

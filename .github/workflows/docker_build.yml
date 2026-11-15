@@ -10,6 +10,16 @@ on:
       platform:
         default: amd64
         type: string
+      rspamd_commit:
+        description: "Full sha of the rspamd commit to build (empty: build the tip of the ref)"
+        default: ""
+        required: false
+        type: string
+      rspamd_describe:
+        description: "git describe of rspamd_commit (empty: computed during the build)"
+        default: ""
+        required: false
+        type: string
     outputs:
       digest_asan:
         description: "Digest of the ASAN image"
@@ -55,6 +65,8 @@ jobs:
         with:
           nightly: ${{ inputs.nightly }}
           platform: ${{ inputs.platform }}
+          rspamd_commit: ${{ inputs.rspamd_commit }}
+          rspamd_describe: ${{ inputs.rspamd_describe }}
 
       - name: Build pkg image
         id: build_pkg
@@ -63,6 +75,8 @@ jobs:
           build-args: |
             RSPAMD_GIT=${{ steps.compute.outputs.rspamd_git }}
             RSPAMD_VERSION=${{ steps.compute.outputs.rspamd_version }}
+            RSPAMD_COMMIT=${{ inputs.rspamd_commit }}
+            RSPAMD_GIT_DESCRIBE=${{ inputs.rspamd_describe }}
           file: Dockerfile.pkg
           push: true
           tags: ghcr.io/${{ github.repository }}:pkg${{ steps.compute.outputs.pkg_tag_suffix }}
